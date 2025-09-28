@@ -304,11 +304,11 @@ class AiVideoMakerAPI {
         }
       });
       console.log("Log Respon Data:", JSON.stringify(response.data));
-      const taskId = response.data;
+      const taskId = response.data?.["0"]?.result?.data?.json;
       if (!taskId) throw new Error("Gagal mendapatkan task_id dari respons.");
       console.log("Proses: Berhasil memulai pembuatan video dari teks.");
       return {
-        ...taskId,
+        task_id: taskId,
         key: currentKey
       };
     } catch (error) {
@@ -351,11 +351,11 @@ class AiVideoMakerAPI {
         }
       });
       console.log("Log Respon Data:", JSON.stringify(response.data));
-      const taskId = response.data;
+      const taskId = response.data?.["0"]?.result?.data?.json;
       if (!taskId) throw new Error("Gagal mendapatkan task_id dari respons.");
       console.log("Proses: Berhasil memulai pembuatan video dari gambar.");
       return {
-        ...taskId,
+        task_id: taskId,
         key: currentKey
       };
     } catch (error) {
@@ -391,7 +391,7 @@ class AiVideoMakerAPI {
         }
       });
       console.log("Log Respon Data:", JSON.stringify(response.data));
-      const resultData = response.data;
+      const resultData = response.data?.["0"]?.result?.data?.json;
       if (!resultData) throw new Error("Data status tidak ditemukan pada respons.");
       console.log("Proses: Berhasil mendapatkan status tugas.");
       return {

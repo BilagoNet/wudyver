@@ -9,7 +9,22 @@ class AxiosClient {
       5: "https://files.xianqiao.wang/",
       6: "https://api.fsh.plus/html?url=",
       7: "https://akinator.jack04309487.workers.dev/",
-      8: "https://cors.caliph.my.id/"
+      8: "https://cors.caliph.my.id/",
+      9: "https://proxy.it-mohmmed.workers.dev/?url=",
+      10: "https://proxy.khacmanh-info.workers.dev/?url=",
+      11: "https://proxy.khacdat-info.workers.dev/?url=",
+      12: "https://proxy.nkm1703.workers.dev/?url=",
+      13: "https://proxy.uneti-it.workers.dev/?url=",
+      14: "https://proxy.teamvn1235.workers.dev/?url=",
+      15: "https://proxy.zeronightpro.workers.dev/?url=",
+      16: "https://proxy.manhrit.workers.dev/?url=",
+      17: "https://proxy.cskh-n8n.workers.dev/?url=",
+      18: "https://proxy.manhnguyenict.workers.dev/?url=",
+      19: "https://proxy.nguyenmanhict.workers.dev/?url=",
+      20: "https://proxy.cskh-zm.workers.dev/?url=",
+      21: "https://proxy.tgb6jphrx7.workers.dev/?url=",
+      22: "https://proxy.manhict.workers.dev/?url=",
+      23: "https://bypass.manhgdev.workers.dev/?url="
     };
   }
   addHost(key, url) {

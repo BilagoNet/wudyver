@@ -50,7 +50,7 @@ const createSpinner = text => ora({
   text: text,
   spinner: "moon"
 });
-const Provider = ["Catbox", "Doodstream", "Fexnet", "DOffice", "Bash", "FileDitch", "Filebin", "Fileio", "Filezone", "FreeImage", "Gofile", "Gozic", "Hostfile", "Imgbb", "Kitc", "Kraken", "MediaUpload", "Eax", "Nullbyte", "Vello", "Lusia", "Pomf2", "Sazumi", "Sohu", "Gizai", "Sojib", "Instantiated", "Exonity", "Zcy", "BltokProject", "Maricon", "Nauval", "Supa", "Knowee", "Puticu", "Stylar", "Telegraph", "Tmpfiles", "Cloudmini", "Babup", "Transfersh", "Ucarecdn", "Uguu", "UploadEE", "Uploadify", "Videy", "ZippyShare", "Quax", "Aceimg"];
+const Provider = ["Catbox", "Litterbox", "Doodstream", "Fexnet", "DOffice", "Bash", "FileDitch", "Filebin", "Fileio", "Filezone", "FreeImage", "Gofile", "Gozic", "Hostfile", "Imgbb", "Kitc", "Kraken", "MediaUpload", "Eax", "Nullbyte", "Vello", "Lusia", "Pomf2", "Sazumi", "Sohu", "Gizai", "Sojib", "Instantiated", "Exonity", "Zcy", "BltokProject", "Maricon", "Nauval", "Supa", "Knowee", "Puticu", "Stylar", "Telegraph", "Tmpfiles", "Cloudmini", "Babup", "Transfersh", "Ucarecdn", "Uguu", "UploadEE", "Uploadify", "Videy", "ZippyShare", "Quax", "Aceimg"];
 class Uploader {
   constructor() {
     this.Provider = Provider;
@@ -141,6 +141,26 @@ class Uploader {
         }
       });
       return spinner.succeed(chalk.green("Uploaded to Catbox.moe")), await response.text();
+    } catch (error) {
+      handleError(error, spinner);
+    }
+  }
+  async Litterbox(content) {
+    const spinner = createSpinner("Uploading to Litterbox").start();
+    try {
+      const {
+        formData
+      } = await createFormData(content, "fileToUpload");
+      formData.append("reqtype", "fileupload");
+      formData.append("time", "72h");
+      const response = await fetch("https://litterbox.catbox.moe/resources/internals/api.php", {
+        method: "POST",
+        body: formData,
+        headers: {
+          "User-Agent": fakeUa()
+        }
+      });
+      return spinner.succeed(chalk.green("Uploaded to Litterbox")), await response.text();
     } catch (error) {
       handleError(error, spinner);
     }
