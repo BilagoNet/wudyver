@@ -1,210 +1,182 @@
 import axios from "axios";
-import FormData from "form-data";
-class AIGen {
-  constructor(key = "az-chatai-key", base = "https://api.appzone.tech") {
-    this.key = key;
-    this.base = base;
-    this.ax = axios.create({
-      baseURL: base,
+import SpoofHead from "@/lib/spoof-head";
+class AIClient {
+  constructor(config = {}) {
+    this.baseURL = config.baseURL || "https://api.appzone.tech/v1";
+    this.timeout = config.timeout || 12e4;
+    this.client = axios.create({
+      baseURL: this.baseURL,
+      timeout: this.timeout,
       headers: {
-        Authorization: `Bearer ${key}`
-      },
-      timeout: 12e4
-    });
-  }
-  async _handleMedia(media) {
-    if (Buffer.isBuffer(media)) {
-      console.log("[Gen] Media is a buffer.");
-      return media;
-    }
-    if (typeof media === "string") {
-      if (media.startsWith("http://") || media.startsWith("https://")) {
-        console.log(`[Gen] Fetching media from URL: ${media}`);
-        const response = await axios.get(media, {
-          responseType: "arraybuffer"
-        });
-        return Buffer.from(response.data);
+        "Content-Type": "application/json",
+        ...SpoofHead(),
+        ...config.headers
       }
-      console.log("[Gen] Media is a base64 string.");
-      return Buffer.from(media, "base64");
-    }
-    throw new Error("Invalid media type. Please provide a URL, base64 string, or a Buffer.");
+    });
+    console.log("[AIClient] Initialized");
   }
-  async generate({
-    mode,
+  async chat({
     prompt,
     messages,
-    media,
+    imageUrl,
     ...rest
   }) {
-    const m = mode || "chat";
-    console.log(`[Gen] Mode: ${m}`);
+    console.log("[Chat] Starting request...");
     try {
-      if (m === "chat") return await this.chat(messages?.length ? messages : prompt, rest);
-      if (m === "image") return await this.img(prompt, rest);
-      if (m === "transcribe") return await this.trans(media, rest);
-      if (m === "extract") return await this.ext(media, rest);
-      throw new Error("Invalid mode");
-    } catch (e) {
-      console.error(`[Gen] Error:`, e?.message || e);
-      throw e;
-    }
-  }
-  async chat(input, {
-    stream = true,
-    model = "gpt-4",
-    userId,
-    ...opts
-  } = {}) {
-    console.log(`[Chat] Start - Stream: ${stream}`);
-    try {
-      const msgs = Array.isArray(input) ? input : [{
-        role: "user",
-        content: input
-      }];
       const payload = {
-        model: model,
-        stream: stream,
-        messages: msgs,
-        ...opts
+        model: "gpt-4",
+        stream: true,
+        web_search: false,
+        reason: false,
+        study_mode: false,
+        ...rest,
+        messages: this.buildMsg({
+          prompt: prompt,
+          messages: messages,
+          imageUrl: imageUrl
+        })
       };
-      const res = await this.ax.post("/v1/chat/completions", payload, {
-        headers: {
-          "Content-Type": "application/json",
-          ...userId ? {
-            "X-User-ID": userId
-          } : {}
-        },
-        responseType: stream ? "stream" : "json"
+      console.log("[Chat] Sending request");
+      const response = await this.client.post("/chat/completions", payload, {
+        responseType: "stream",
+        headers: this.getHeaders()
       });
-      if (stream) {
-        console.log(`[Chat] Streaming response`);
-        return this.handleStream(res.data);
+      console.log("[Chat] Stream started");
+      const result = await this.handleStream(response.data);
+      console.log(`[Chat] Completed - Chars: ${result.result.length}`);
+      return result;
+    } catch (error) {
+      console.error("[Chat] Request failed:", error?.message);
+      throw this.handleErr(error);
+    }
+  }
+  buildMsg({
+    prompt,
+    messages,
+    imageUrl
+  }) {
+    const msgArr = messages?.length ? messages : [];
+    const formatted = msgArr.map(msg => this.fmtMsg(msg));
+    if (prompt) {
+      formatted.push(this.userMsg(prompt, imageUrl));
+    }
+    console.log(`[Messages] Count: ${formatted.length}`);
+    return formatted;
+  }
+  fmtMsg(msg) {
+    const role = msg?.isUser ? "user" : "assistant";
+    const content = [];
+    if (msg?.text) {
+      content.push({
+        type: "text",
+        text: msg.text || ""
+      });
+    }
+    if (msg?.image) {
+      const img = this.fmtImg(msg.image);
+      img && content.push(img);
+    }
+    if (msg?.document) {
+      const doc = this.fmtDoc(msg.document);
+      doc && content.push(doc);
+    }
+    return {
+      role: role,
+      content: content.length ? content : [{
+        type: "text",
+        text: ""
+      }]
+    };
+  }
+  userMsg(prompt, imageUrl) {
+    const content = [{
+      type: "text",
+      text: prompt || ""
+    }];
+    if (imageUrl) {
+      const img = this.fmtImg(imageUrl);
+      img && content.push(img);
+    }
+    return {
+      role: "user",
+      content: content
+    };
+  }
+  fmtImg(img) {
+    if (!img) return null;
+    let imgData = img;
+    if (typeof img === "object") {
+      imgData = img.base64 || img.uri || img.url;
+    }
+    if (!imgData) return null;
+    const url = imgData.startsWith("data:") ? imgData : `data:image/jpeg;base64,${imgData}`;
+    return {
+      type: "image_url",
+      image_url: {
+        url: url
       }
-      console.log(res.data);
-      return res.data;
-    } catch (e) {
-      console.error(`[Chat] Failed:`, e?.response?.data || e?.message);
-      throw e;
-    }
+    };
   }
-  async img(prompt, {
-    size = "1024x1024",
-    n = 1,
-    ...opts
-  } = {}) {
-    console.log(`[Img] Generate: ${size}`);
-    try {
-      const res = await this.ax.post("/v1/images/generations", {
-        prompt: prompt,
-        size: size,
-        n: n,
-        ...opts
-      }, {
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
-      console.log(res.data);
-      return res.data;
-    } catch (e) {
-      console.error(`[Img] Failed:`, e?.response?.data || e?.message);
-      throw e;
-    }
+  fmtDoc(doc) {
+    if (!doc) return null;
+    const name = doc?.name || "document";
+    const text = doc?.text || doc?.content || "";
+    return {
+      type: "text",
+      text: `Doc ${name}: ${text}`
+    };
   }
-  async trans(media, {
-    lang = "en",
-    filename = "audio.wav",
-    contentType = "audio/wav",
-    ...opts
-  } = {}) {
-    console.log(`[Trans] File: ${filename}`);
-    try {
-      const buffer = await this._handleMedia(media);
-      const form = new FormData();
-      form.append("file", buffer, {
-        filename: filename,
-        contentType: contentType
-      });
-      if (lang) form.append("language", lang);
-      const res = await this.ax.post("/transcribe-audio", form, {
-        headers: {
-          ...form.getHeaders(),
-          Accept: "application/json"
-        },
-        ...opts
-      });
-      console.log(res.data);
-      return res.data;
-    } catch (e) {
-      console.error(`[Trans] Failed:`, e?.response?.data || e?.message);
-      throw e;
-    }
-  }
-  async ext(media, {
-    filename = "document.pdf",
-    contentType = "application/pdf",
-    ...opts
-  } = {}) {
-    console.log(`[Ext] Processing: ${filename}`);
-    try {
-      const buffer = await this._handleMedia(media);
-      const form = new FormData();
-      form.append("file", buffer, {
-        filename: filename,
-        contentType: contentType
-      });
-      const res = await this.ax.post("/extract-text", form, {
-        headers: {
-          ...form.getHeaders()
-        },
-        timeout: 6e4,
-        ...opts
-      });
-      console.log(res.data);
-      return res.data;
-    } catch (e) {
-      console.error(`[Ext] Failed:`, e?.response?.data || e?.message);
-      throw e;
-    }
+  getHeaders() {
+    return {
+      Authorization: "Bearer az-chatai-key",
+      "X-App-Version": "1.0.0",
+      "X-User-ID": "anonymous"
+    };
   }
   handleStream(stream) {
     return new Promise((resolve, reject) => {
-      const resolvedData = {
+      const data = {
         result: "",
         model: "",
         id: "",
         chunk: []
       };
+      console.log("[Stream] Processing...");
       stream.on("data", chunk => {
-        const lines = chunk.toString().split("\n").filter(l => l.trim());
+        const lines = chunk.toString().split("\n").filter(l => l?.trim());
         for (const line of lines) {
           if (line === "data: [DONE]") continue;
           if (!line.startsWith("data: ")) continue;
           try {
-            const data = JSON.parse(line.slice(6));
-            resolvedData.chunk.push(data);
-            if (!resolvedData.id && data.id) {
-              resolvedData.id = data.id;
-            }
-            if (!resolvedData.model && data.model) {
-              resolvedData.model = data.model;
-            }
-            const content = data?.choices?.[0]?.delta?.content;
+            const json = JSON.parse(line.slice(6));
+            data.chunk.push(json);
+            data.id = data.id || json?.id || "";
+            data.model = data.model || json?.model || "";
+            const content = json?.choices?.[0]?.delta?.content;
             if (content) {
-              resolvedData.result += content;
+              data.result += content;
+              process.stdout.write(content);
             }
           } catch (e) {
-            console.warn(`[Stream] Parse error:`, e?.message);
+            console.warn(`[Stream] Parse warn:`, e?.message);
           }
         }
       });
       stream.on("end", () => {
-        console.log(`\n[Stream] Complete - Total: ${resolvedData.result.length} chars`);
-        resolve(resolvedData);
+        console.log(`\n[Stream] Done - chunks: ${data.chunk.length}`);
+        resolve(data);
       });
-      stream.on("error", reject);
+      stream.on("error", error => {
+        console.error("[Stream] Error:", error?.message);
+        reject(error);
+      });
     });
+  }
+  handleErr(error) {
+    const status = error?.response?.status;
+    const msg = error?.response?.data?.message || error?.message || "Error";
+    const code = error?.code || status || 500;
+    return new Error(`API Error (${code}): ${msg}`);
   }
 }
 export default async function handler(req, res) {
@@ -215,8 +187,8 @@ export default async function handler(req, res) {
     });
   }
   try {
-    const client = new AIGen();
-    const response = await client.generate(params);
+    const client = new AIClient();
+    const response = await client.chat(params);
     return res.status(200).json(response);
   } catch (error) {
     res.status(500).json({

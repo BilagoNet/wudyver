@@ -32,6 +32,50 @@ class VeoApi {
     });
     return decryptedJson.text;
   }
+  async txt2img({
+    prompt,
+    aspect_ratio = "ASPECT_1_1",
+    model = "V_2",
+    magic_prompt_option = "AUTO",
+    style_type = "AUTO",
+    ...rest
+  }) {
+    try {
+      this.log("Starting text to image generation", {
+        prompt: prompt?.slice(0, 50) + "..."
+      });
+      if (!prompt?.trim()) {
+        throw new Error("Please enter a prompt before generating an image.");
+      }
+      const payload = {
+        image_request: {
+          prompt: prompt.trim(),
+          aspect_ratio: aspect_ratio,
+          model: model,
+          magic_prompt_option: magic_prompt_option,
+          style_type: style_type,
+          ...rest
+        }
+      };
+      const response = await this.client.post("/api/proxy/ideogram", payload);
+      this.log("Raw API Response:", response.data);
+      if (!response.data?.operation) {
+        throw new Error("No operation returned from server");
+      }
+      this.log("Image generation started", {
+        operation: response.data.operation
+      });
+      const task_id = await this.enc({
+        operation: response.data.operation
+      });
+      return {
+        task_id: task_id
+      };
+    } catch (error) {
+      this.log("Image generation failed", error.message);
+      throw error;
+    }
+  }
   async txt2vid({
     prompt,
     negativePrompt = "",
@@ -257,6 +301,14 @@ export default async function handler(req, res) {
   try {
     let response;
     switch (action) {
+      case "txt2img":
+        if (!params.prompt) {
+          return res.status(400).json({
+            error: "Parameter 'prompt' wajib diisi untuk action 'txt2img'."
+          });
+        }
+        response = await api.txt2img(params);
+        break;
       case "txt2vid":
         if (!params.prompt) {
           return res.status(400).json({
@@ -276,14 +328,14 @@ export default async function handler(req, res) {
       case "status":
         if (!params.task_id) {
           return res.status(400).json({
-            error: "Parameter 'key' dan 'task_id' wajib diisi untuk action 'status'."
+            error: "Parameter 'task_id' wajib diisi untuk action 'status'."
           });
         }
         response = await api.status(params);
         break;
       default:
         return res.status(400).json({
-          error: `Action tidak valid: ${action}. Action yang didukung: 'txt2vid', 'img2vid' dan 'status'.`
+          error: `Action tidak valid: ${action}. Action yang didukung: 'txt2img', 'txt2vid', 'img2vid' dan 'status'.`
         });
     }
     return res.status(200).json(response);

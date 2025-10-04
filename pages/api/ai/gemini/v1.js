@@ -1,44 +1,60 @@
 import axios from "axios";
 class GeminiAPI {
   constructor() {
-    this.encKey = ["QUl6YVN5RGtha2QtMWNiR3FlU1Y2eHJ3WTk4Q0o4SVF5LUpqeUgw", "QUl6YVN5Q2dTVmc4Mms1aUt2Tng2LTNEUmFCSE5Ham5CbGNxaTJZ", "QUl6YVN5Q1dlZUVPVHlqT2Vwc0kyTjg0SDRDMUd4bDlwWk45X3Zr", "QUl6YVN5RGQzM0VBejJXR3BqdkM4R0xJV09sNFJFRXRQSWJCVjBz", "QUl6YVN5QW92M2ZZV0hOejNGaWpQaVNFRG81MnJrTFlBWWsxaEFz", "QUl6YVN5Q2JJVXhPZUVmWl90ajhEbk1BYWhmNG9pNXBuTVh6OXRr", "QUl6YVN5QnlSSjk5eEhkV2ozWFl6YmdZQUFkbTRDUUF6NzBUYXBj", "QUl6YVN5RExyU2FoV3I0WWFWS3l0MmdUbmtwSTBiSUZPVkVQVjdZ"];
+    this.encKey = ["QUl6YVN5RGtha2QtMWNiR3FlU1Y2eHJ3WTk4Q0o4SVF5LUpqeUgw", "QUl6YVN5Q2dTVmc4Mms1aUt2Tng2LTNEUmFCSE5Ham5CbGNxaTJZ", "QUl6YVN5Q1dlZUVPVHlqT2Vwc0kyTjg0SDRDMUd4bDlwWk45X3Zr", "QUl6YVN5RGQzM0VBejJXR3BqdkM4R0xJV09sNFJFRXRQSWJCVjBz", "QUl6YVN5QW92M2ZZV0hOejNGaWpQaVNFRG81MnJrTFlBWWsxaEFz", "QUl6YVN5Q2JJVXhPZUVmWl90ajhEbk1BYWhmNG9pNXBuTVh6OXRr", "QUl6YVN5QnlSSjk5eEhkV2ozWFl6YmdZQUFkbTRDUUF6NzBUYXBj", "QUl6YVN5RExyU2FoV3I0WWFWS3l0MmdUbmtwSTBiSUZPVkVQVjdZ", "QUl6YVN5Q0Q0YV9hc2NVcGd4UGREQ0hWa0pteXk2cExROFd6bkJJ"];
     this.baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/";
     this.headers = {
       "content-type": "application/json",
       "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36"
     };
   }
-  async getData(imgUrl) {
+  async getData(imageUrl) {
     try {
-      const response = await axios.get(imgUrl, {
+      const response = await axios.get(imageUrl, {
         responseType: "arraybuffer"
       });
       return {
-        mime_type: response.headers["content-type"],
-        data: Buffer.from(response.data, "binary").toString("base64")
+        inline_data: {
+          mime_type: response.headers["content-type"],
+          data: Buffer.from(response.data, "binary").toString("base64")
+        }
       };
     } catch (error) {
-      console.error("Error fetching image:", error);
-      throw error;
+      console.error(`Error fetching image from ${imageUrl}:`, error);
+      throw new Error(`Failed to fetch image from ${imageUrl}`);
     }
   }
   async chat({
     model = "gemini-1.5-flash",
     prompt,
-    imgUrl = null
+    imageUrl = null,
+    ...rest
   }) {
     if (!prompt) throw new Error("Prompt is required");
     const ranKey = this.encKey[Math.floor(Math.random() * this.encKey.length)];
     const decKey = Buffer.from(ranKey, "base64").toString("utf-8");
     const url = `${this.baseUrl}${model}:generateContent?key=${decKey}`;
+    const parts = [];
+    if (imageUrl) {
+      const urls = Array.isArray(imageUrl) ? imageUrl : [imageUrl];
+      try {
+        for (const url of urls) {
+          const imagePart = await this.getData(url);
+          parts.push(imagePart);
+        }
+      } catch (error) {
+        console.error("An image failed to download, stopping process:", error);
+        throw error;
+      }
+    }
+    parts.push({
+      text: prompt
+    });
     const body = {
       contents: [{
-        parts: [...imgUrl ? [{
-          inline_data: await this.getData(imgUrl)
-        }] : [], {
-          text: prompt
-        }]
-      }]
+        parts: parts
+      }],
+      ...rest
     };
     try {
       const response = await axios.post(url, body, {
@@ -46,7 +62,7 @@ class GeminiAPI {
       });
       return response.data;
     } catch (error) {
-      console.error("Error fetching Gemini response:", error);
+      console.error("Error fetching Gemini response:", error.response ? error.response.data : error.message);
       throw error;
     }
   }

@@ -16,42 +16,59 @@ class GeminiAPI {
       "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
     };
   }
-  async getImage(imgUrl) {
+  async getData(imageUrl) {
     try {
-      const response = await axios.get(imgUrl, {
+      const response = await axios.get(imageUrl, {
         responseType: "arraybuffer"
       });
       return {
-        mime_type: response.headers["content-type"],
-        data: Buffer.from(response.data, "binary").toString("base64")
+        inline_data: {
+          mime_type: response.headers["content-type"],
+          data: Buffer.from(response.data, "binary").toString("base64")
+        }
       };
     } catch (error) {
-      console.error("Error fetching image:", error);
-      throw error;
+      console.error(`Error fetching image from ${imageUrl}:`, error);
+      throw new Error(`Failed to fetch image from ${imageUrl}`);
     }
   }
   async chat({
-    prompt,
     model = "gemini-2.0-flash-lite",
-    imgUrl
+    prompt,
+    imageUrl = null,
+    ...rest
   }) {
+    if (!prompt) throw new Error("Prompt is required");
+    const url = this.baseUrl;
+    const parts = [];
+    if (imageUrl) {
+      const urls = Array.isArray(imageUrl) ? imageUrl : [imageUrl];
+      try {
+        for (const url of urls) {
+          const imagePart = await this.getData(url);
+          parts.push(imagePart);
+        }
+      } catch (error) {
+        console.error("An image failed to download, stopping process:", error);
+        throw error;
+      }
+    }
+    parts.push({
+      text: prompt
+    });
+    const body = {
+      contents: [{
+        parts: parts
+      }],
+      ...rest
+    };
     try {
-      const requestData = {
-        model: model,
-        contents: [{
-          parts: [...imgUrl ? [{
-            inline_data: await this.getImage(imgUrl)
-          }] : [], {
-            text: prompt
-          }]
-        }]
-      };
-      const response = await axios.post(this.baseUrl, requestData, {
+      const response = await axios.post(url, body, {
         headers: this.headers
       });
       return response.data;
     } catch (error) {
-      console.error("Internal Server Error:", error.response?.data || error.message);
+      console.error("Error fetching Gemini response:", error.response ? error.response.data : error.message);
       throw error;
     }
   }
