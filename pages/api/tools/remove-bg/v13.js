@@ -1,5 +1,6 @@
 import axios from "axios";
 import FormData from "form-data";
+import SpoofHead from "@/lib/spoof-head";
 class RemoveBg {
   constructor() {
     this.API_URL = "https://backrem.pi7.org/remove_bg";
@@ -8,7 +9,8 @@ class RemoveBg {
       "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36",
       Accept: "*/*",
       Origin: "https://image.pi7.org",
-      Referer: "https://image.pi7.org/"
+      Referer: "https://image.pi7.org/",
+      ...SpoofHead()
     };
   }
   _randName() {

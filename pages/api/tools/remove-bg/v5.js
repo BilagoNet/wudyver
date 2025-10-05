@@ -6,6 +6,7 @@ import {
   FormData,
   Blob
 } from "formdata-node";
+import SpoofHead from "@/lib/spoof-head";
 class ImageRemover {
   constructor() {
     this.base = "https://removal.ai";
@@ -27,7 +28,8 @@ class ImageRemover {
         "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
         "sec-ch-ua": '"Chromium";v="131", "Not_A Brand";v="24", "Microsoft Edge Simulate";v="131", "Lemur";v="131"',
         "sec-ch-ua-mobile": "?1",
-        "sec-ch-ua-platform": '"Android"'
+        "sec-ch-ua-platform": '"Android"',
+        ...SpoofHead()
       },
       jar: this.cookieJar,
       withCredentials: true

@@ -1,4 +1,5 @@
 import axios from "axios";
+import SpoofHead from "@/lib/spoof-head";
 class PhotoCutAPI {
   constructor() {
     this.baseUrl = "https://photocutapi.info/andor-media-1.0/aiart";
@@ -23,7 +24,8 @@ class PhotoCutAPI {
       "sec-ch-ua-mobile": "?1",
       "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
       Accept: "application/json, text/plain, */*",
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      ...SpoofHead()
     };
   }
   async removeBg({

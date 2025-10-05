@@ -29,7 +29,7 @@ class NanoBananaGen {
     try {
       console.log("Menginisialisasi sesi dan mengambil CSRF token...");
       const response = await this.api.get("/auth/csrf");
-      this.csrfToken = response.data.csrfToken;
+      this.csrfToken = response.data.csrfToken || "csrf";
       if (this.csrfToken) {
         console.log("Inisialisasi berhasil, CSRF token diterima.");
       } else {
@@ -119,6 +119,7 @@ class NanoBananaGen {
     prompt = PROMPT.text,
     imageUrl
   }) {
+    await this.initialize();
     if (!this.csrfToken) {
       console.error("Sesi belum diinisialisasi. Jalankan metode initialize() terlebih dahulu.");
       return null;
