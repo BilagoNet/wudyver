@@ -171,7 +171,7 @@ export default async function handler(req, res) {
     });
   }
   try {
-    const api = new GroupScraper();
+    const api = new TikTokStalker();
     const response = await api.stalker(params);
     return res.status(200).json(response);
   } catch (error) {

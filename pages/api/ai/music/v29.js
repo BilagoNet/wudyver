@@ -393,9 +393,9 @@ export default async function handler(req, res) {
         response = await api.credit(params);
         break;
       case "generate":
-        if (!params.key || !params.prompt) {
+        if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'key' dan 'prompt' wajib diisi."
+            error: "Parameter 'prompt' wajib diisi."
           });
         }
         response = await api.generate(params);

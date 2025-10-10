@@ -17,9 +17,6 @@ import ora from "ora";
 import chalk from "chalk";
 import _ from "lodash";
 import formidable from "formidable";
-import {
-  promises as fs
-} from "fs";
 const referer = "https://krakenfiles.com";
 const uloadUrlRegexStr = /url: "([^"]+)"/;
 const generateSlug = crypto.createHash("md5").update(`${Date.now()}-${uuidv4()}`).digest("hex").substring(0, 8);
@@ -1086,9 +1083,8 @@ export const config = {
   }
 };
 const formidableConfig = {
-  keepExtensions: true,
-  maxFileSize: 1e7,
-  maxFieldsSize: 1e7,
+  maxFileSize: Infinity,
+  maxFieldsSize: Infinity,
   maxFields: 10,
   allowEmptyFiles: true,
   multiples: true
@@ -1096,27 +1092,46 @@ const formidableConfig = {
 async function parseForm(req) {
   return new Promise((resolve, reject) => {
     const form = formidable(formidableConfig);
-    form.parse(req, async (err, fields, files) => {
-      if (err) return reject(err);
-      const file = files.file;
-      if (!file) return resolve({
-        buffer: null,
-        fileName: null,
-        fields: fields
-      });
-      const uploadedFile = Array.isArray(file) ? file[0] : file;
-      try {
-        const buffer = await fs.readFile(uploadedFile.filepath);
-        await fs.unlink(uploadedFile.filepath);
-        resolve({
-          buffer: buffer,
-          fileName: uploadedFile.originalFilename || "unknown_file",
-          fields: fields
-        });
-      } catch (err) {
-        reject(err);
+    const fields = {};
+    let fileBuffer = null;
+    let fileName = null;
+    let fileReceived = false;
+    form.on("field", (name, value) => {
+      if (fields[name]) {
+        if (!Array.isArray(fields[name])) {
+          fields[name] = [fields[name]];
+        }
+        fields[name].push(value);
+      } else {
+        fields[name] = value;
       }
     });
+    form.on("file", (formName, file) => {
+      if (fileReceived) return;
+      fileReceived = true;
+      const chunks = [];
+      fileName = file.originalFilename;
+      file.on("data", chunk => {
+        chunks.push(chunk);
+      });
+      file.on("end", () => {
+        fileBuffer = Buffer.concat(chunks);
+      });
+      file.on("error", err => {
+        return reject(err);
+      });
+    });
+    form.on("error", err => {
+      return reject(err);
+    });
+    form.on("end", () => {
+      resolve({
+        buffer: fileBuffer,
+        fileName: fileName || "unknown_file",
+        fields: fields
+      });
+    });
+    form.parse(req);
   });
 }
 export default async function handler(req, res) {
@@ -1152,7 +1167,7 @@ export default async function handler(req, res) {
     } else {
       let rawBody = "";
       await new Promise((resolve, reject) => {
-        req.on("data", chunk => rawBody += chunk);
+        req.on("data", chunk => rawBody += chunk.toString());
         req.on("end", resolve);
         req.on("error", reject);
       });
