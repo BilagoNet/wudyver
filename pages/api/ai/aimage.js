@@ -361,25 +361,26 @@ class AImageAI {
       });
       console.log(`Proses: Membuat gambar dengan prompt: "${prompt}"`);
       console.log(`Style: ${style}, Size: ${size}`);
-      const processedReferenceImages = [];
-      if (imageUrl && imageUrl.length > 0) {
-        console.log(`Proses: Mengkonversi ${imageUrl.length} reference image ke base64...`);
-        for (const imageUrl of imageUrl) {
+      const imageUrls = Array.isArray(imageUrl) ? imageUrl : imageUrl ? [imageUrl] : [];
+      const referenceImages = [];
+      if (imageUrls.length > 0) {
+        console.log(`Proses: Mengkonversi ${imageUrls.length} reference image ke base64...`);
+        for (const url of imageUrls) {
           try {
-            const imageBase64 = await this._convertImageToBase64(imageUrl);
-            processedReferenceImages.push(imageBase64);
-            console.log(`-> Berhasil mengkonversi image ke base64`);
+            const imageBase64 = await this._convertImageToBase64(url);
+            referenceImages.push(imageBase64);
+            console.log(`-> Berhasil mengkonversi image dari ${url}`);
           } catch (error) {
-            console.warn(`[PERINGATAN] Gagal mengkonversi image: ${error.message}`);
+            console.warn(`[PERINGATAN] Gagal mengkonversi image dari ${url}: ${error.message}`);
           }
         }
-        console.log(`Proses: ${processedReferenceImages.length} reference image berhasil diproses`);
+        console.log(`Proses: ${referenceImages.length} reference image berhasil diproses`);
       }
       const payload = {
         prompt: prompt,
         style: style,
         size: size,
-        referenceImages: processedReferenceImages
+        referenceImages: referenceImages
       };
       const response = await this.api.post(this.config.endpoints.generate, payload);
       if (!response.data?.taskId) {

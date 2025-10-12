@@ -63,36 +63,52 @@ class ChatPlusAPI {
       const response = await this.client.post("/chat", payload);
       console.log("Response diterima:", response?.status);
       const data = response?.data || "";
-      const lines = data.split("\n");
-      const result = lines.filter(line => line.trim() && !line.startsWith("e:") && !line.startsWith("d:")).map(line => {
-        const colonIndex = line.indexOf(":");
-        if (colonIndex !== -1) {
-          const content = line.slice(colonIndex + 1).trim();
-          if (content.startsWith('"') && content.endsWith('"')) {
-            return content.slice(1, -1);
+      const lines = data.split("\n").filter(line => line.trim() !== "");
+      let messageId = null;
+      let resultText = "";
+      let eventData = {};
+      for (const line of lines) {
+        const prefix = line.substring(0, 2);
+        const content = line.substring(2);
+        if (prefix === "f:") {
+          try {
+            const parsedContent = JSON.parse(content);
+            messageId = parsedContent.messageId || null;
+          } catch (e) {
+            console.error("Gagal mem-parsing baris f:", content);
           }
-          return content;
+        } else if (prefix === "0:") {
+          try {
+            const parsedChunk = JSON.parse(content);
+            resultText += parsedChunk;
+          } catch (e) {
+            console.error("Gagal mem-parsing baris 0:", content);
+            resultText += content.startsWith('"') && content.endsWith('"') ? content.slice(1, -1) : content;
+          }
+        } else if (prefix === "e:" || prefix === "d:") {
+          try {
+            eventData = JSON.parse(content);
+          } catch (e) {
+            console.error(`Gagal mem-parsing baris ${prefix}`, content);
+          }
         }
-        return line;
-      }).filter(text => text && text !== "null").join("");
-      const eventLine = lines.find(line => line.startsWith("e:") || line.startsWith("d:"));
-      const eventData = eventLine ? JSON.parse(eventLine.slice(2)) : {};
+      }
       const usage = eventData?.usage || {
         promptTokens: null,
         completionTokens: null
       };
       const reason = eventData?.finishReason || "unknown";
       console.log("Proses selesai:", {
-        resultLength: result.length,
+        resultLength: resultText.length,
         usage: usage,
         reason: reason
       });
       return {
-        result: result || "No response",
+        result: resultText || "No response",
         sessionId: sessionId,
         usage: usage,
         reason: reason,
-        messageId: lines.find(line => line.startsWith("f:"))?.slice(2)?.replace(/"/g, "") || null
+        messageId: messageId
       };
     } catch (error) {
       console.error("Error pada chat:", error?.response?.data || error?.message);
