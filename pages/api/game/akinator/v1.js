@@ -54,6 +54,7 @@ class Akinator {
     console.log("Akinator class initialized.");
     this.region = region;
     const proxyBaseURL = `${PROXY.url}https://${this.region}.akinator.com`;
+    console.log("CORS proxy", PROXY.url);
     this.proxyClient = axios.create({
       baseURL: proxyBaseURL,
       httpsAgent: httpsAgent,

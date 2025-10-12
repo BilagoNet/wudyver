@@ -11,7 +11,7 @@ class Komiku {
       baseURL: this.proxy,
       timeout: 6e4
     });
-    console.log("Komiku instance created");
+    console.log("CORS proxy", PROXY.url);
   }
   async home({
     page = 1

@@ -5,12 +5,6 @@ const listProxy = [{
   name: "jack04309487",
   url: "https://akinator.jack04309487.workers.dev/"
 }, {
-  name: "vaportrade",
-  url: "https://cors.vaportrade.net/"
-}, {
-  name: "luckydesigner",
-  url: "https://cors.luckydesigner.workers.dev/?"
-}, {
   name: "cors.eu",
   url: "https://cors.eu.org/"
 }, {

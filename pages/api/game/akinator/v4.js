@@ -10,6 +10,7 @@ const httpsAgent = new Agent({
   keepAlive: true
 });
 const proxy = PROXY.url;
+console.log("CORS proxy", PROXY.url);
 class AkinatorGame {
   constructor(region = "id", childMode = false) {
     this.region = region;

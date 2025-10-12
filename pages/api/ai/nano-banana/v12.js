@@ -4,6 +4,7 @@ import PROXY from "@/configs/proxy-url";
 class BananaAIClient {
   constructor(options = {}) {
     const defaultProxies = [PROXY.url];
+    console.log("CORS proxy", PROXY.url);
     this.proxies = options.proxies || defaultProxies;
     this.targetUrl = "https://bananaai.live";
     this.api = axios.create({

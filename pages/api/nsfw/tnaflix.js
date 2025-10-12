@@ -9,7 +9,7 @@ class TNAFlixScraper {
       endpoint: "/"
     };
     this.proxiedBase = this.config.baseProxy + this.config.baseUrl;
-    console.log("TNAFlix Scraper initialized with CORS proxy");
+    console.log("CORS proxy", PROXY.url);
   }
   async home() {
     try {

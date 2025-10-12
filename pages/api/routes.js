@@ -1165,6 +1165,7 @@ export default function handler(req, res) {
     { path: "/api/maker/snippet/v5", name: "V5", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/maker/text/blue-archive", name: "Blue-archive", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/maker/text/v1", name: "V1", params: [{ "name": "prompt", "in": "query", "required": false }], },
+    { path: "/api/maker/text/v2", name: "V2", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/maker/ttp/v1", name: "V1", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/maker/ttp/v2", name: "V2", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/maker/welcome/v1", name: "V1", params: [{ "name": "prompt", "in": "query", "required": false }], },

@@ -11,6 +11,7 @@ class HanimeAPI {
       }
     };
     const corsProxy = PROXY.url;
+    console.log("CORS proxy", PROXY.url);
     this.searchClient = axios.create({
       baseURL: `${corsProxy}/${this.config.endpoints.search}`,
       headers: {
