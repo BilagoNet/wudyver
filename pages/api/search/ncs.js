@@ -730,7 +730,7 @@ export default async function handler(req, res) {
   });
   try {
     let response;
-    switch (action.toLowerCase()) {
+    switch (action) {
       case "home":
         response = await scraper.home({
           page: params.page ? parseInt(params.page) : 1,

@@ -1,11 +1,11 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
-import PROXY from "@/configs/proxy-url";
+import apiConfig from "@/configs/apiConfig";
 class PornHoarderScraper {
   constructor() {
     this.config = {
       baseUrl: "https://ww2.pornhoarder.tw",
-      baseProxy: PROXY.url,
+      baseProxy: `https://${apiConfig.DOMAIN_URL}/api/tools/web/proxy/v4?url=`,
       endpoint: "/"
     };
     this.proxiedBase = this.config.baseProxy + this.config.baseUrl;

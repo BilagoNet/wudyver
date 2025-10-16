@@ -5,7 +5,7 @@ class Rule34Scraper {
   constructor() {
     this.config = {
       baseUrl: "https://rule34video.com",
-      baseProxy: `https://${apiConfig.DOMAIN_URL}/api/tools/web/html/v12?url=`,
+      baseProxy: `https://${apiConfig.DOMAIN_URL}/api/tools/web/proxy/v4?url=`,
       endpoint: "/"
     };
     this.proxiedBase = this.config.baseProxy + this.config.baseUrl;

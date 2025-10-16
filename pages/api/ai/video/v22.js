@@ -11,7 +11,7 @@ import apiConfig from "@/configs/apiConfig";
 const TEMP_MAIL_API = `https://${apiConfig.DOMAIN_URL}/api/mails/v13`;
 const BASE_URL = "https://nanobanana.org";
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-class NanoBanana {
+class NanoBananaSora2 {
   constructor() {
     this.cookieJar = new CookieJar();
     this.client = wrapper(axios.create({
@@ -20,9 +20,12 @@ class NanoBanana {
         "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36",
         accept: "*/*",
         "accept-language": "id-ID",
+        "cache-control": "no-cache",
+        "content-type": "application/json",
         origin: BASE_URL,
+        pragma: "no-cache",
         priority: "u=1, i",
-        referer: `${BASE_URL}/`,
+        referer: `${BASE_URL}/sora2`,
         "sec-ch-ua": '"Chromium";v="127", "Not)A;Brand";v="99", "Microsoft Edge Simulate";v="127", "Lemur";v="127"',
         "sec-ch-ua-mobile": "?1",
         "sec-ch-ua-platform": '"Android"',
@@ -107,8 +110,8 @@ class NanoBanana {
     console.log("✅ Sesi aktif.");
   }
   async _triggerCreditAllocation() {
-    console.log("⏳ Mengunjungi halaman utama untuk alokasi kredit...");
-    await this.client.get(BASE_URL, {
+    console.log("⏳ Mengunjungi halaman Sora2 untuk alokasi kredit...");
+    await this.client.get(`${BASE_URL}/sora2`, {
       headers: {
         accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         priority: "u=0, i",
@@ -119,8 +122,8 @@ class NanoBanana {
         "upgrade-insecure-requests": "1"
       }
     });
-    console.log("✅ Kunjungan ke halaman utama berhasil.");
-    await this._logCookies("Setelah Kunjungan Halaman Utama");
+    console.log("✅ Kunjungan ke halaman Sora2 berhasil.");
+    await this._logCookies("Setelah Kunjungan Halaman Sora2");
   }
   async _waitForCredits() {
     console.log("⏳ Menunggu alokasi kredit (polling)...");
@@ -143,47 +146,21 @@ class NanoBanana {
     if (!res.data?.data?.id) throw new Error("Gagal mendapatkan info pengguna.");
     console.log(`👤 Login sebagai: ${res.data.data.email}`);
   }
-  async generate({
-    prompt,
-    imageUrl = null,
-    num_images = 1,
-    ...rest
-  }) {
-    if (!prompt) throw new Error('Parameter "prompt" diperlukan.');
-    await this._authenticate();
-    const type = imageUrl ? "image-to-image" : "text-to-image";
-    console.log(`🚀 Memulai tugas: ${type}`);
-    const payload = {
-      type: type,
-      prompt: prompt,
-      num_images: num_images,
-      ...rest
-    };
-    if (imageUrl) {
-      const imageUrls = Array.isArray(imageUrl) ? imageUrl : [imageUrl];
-      const uploadedUrls = [];
-      console.log(`Mengunggah ${imageUrls.length} gambar secara berurutan...`);
-      for (const url of imageUrls) {
-        const uploadedUrl = await this._upload(url);
-        uploadedUrls.push(uploadedUrl);
-      }
-      payload.image_urls = uploadedUrls;
-      console.log("Semua gambar berhasil diunggah.");
-    }
-    const taskId = await this._submit(payload);
-    return await this._polling(taskId);
-  }
   async _upload(imageUrl) {
     console.log("⏳ Mengunggah gambar...");
     let fileBuffer;
-    if (Buffer.isBuffer(imageUrl)) fileBuffer = imageUrl;
-    else if (typeof imageUrl === "string" && imageUrl.startsWith("http")) {
+    if (Buffer.isBuffer(imageUrl)) {
+      fileBuffer = imageUrl;
+    } else if (typeof imageUrl === "string" && imageUrl.startsWith("http")) {
       const res = await this.client.get(imageUrl, {
         responseType: "arraybuffer"
       });
       fileBuffer = Buffer.from(res.data);
-    } else if (typeof imageUrl === "string") fileBuffer = Buffer.from(imageUrl, "base64");
-    else throw new Error("Format imageUrl tidak didukung.");
+    } else if (typeof imageUrl === "string") {
+      fileBuffer = Buffer.from(imageUrl, "base64");
+    } else {
+      throw new Error("Format imageUrl tidak didukung.");
+    }
     const form = new FormData();
     form.append("file", fileBuffer, {
       filename: "image.png"
@@ -191,49 +168,126 @@ class NanoBanana {
     const res = await this.client.post(`${BASE_URL}/api/upload`, form, {
       headers: form.getHeaders()
     });
-    if (!res.data?.success || !res.data.url) throw new Error("Gagal mengunggah gambar.");
+    if (!res.data?.success || !res.data.url) {
+      throw new Error("Gagal mengunggah gambar.");
+    }
     console.log("✅ Gambar berhasil diunggah:", res.data.url);
     return res.data.url;
   }
-  async _submit(payload) {
-    await this._logCookies("Sebelum Submit Generate");
-    if (this.credits < 4) throw new Error(`Kredit tidak mencukupi. Dibutuhkan 4, tersedia: ${this.credits}.`);
-    console.log("⏳ Mengirim tugas generate...");
-    const res = await this.client.post(`${BASE_URL}/api/nano-banana/kie/submit`, payload);
-    if (!res.data?.success || !res.data.task_id) throw new Error("Gagal mengirim tugas.");
-    this.credits = res.data.remaining_credits;
-    console.log(`✅ Tugas berhasil dikirim. Task ID: ${res.data.task_id} | Sisa kredit: ${this.credits}`);
-    return res.data.task_id;
-  }
-  async _polling(taskId) {
-    console.log("⏳ Menunggu hasil gambar (polling)...");
-    for (let i = 0; i < 60; i++) {
-      const res = await this.client.get(`${BASE_URL}/api/nano-banana/status/${taskId}`);
-      if (res.data?.status === "completed") {
-        console.log("\n✅ Tugas selesai!");
-        return res.data.result;
-      } else if (res.data?.status === "failed") {
-        throw new Error(`Proses task gagal: ${res.data.error || "Alasan tidak diketahui"}`);
-      }
-      process.stdout.write(`...`);
-      await delay(3e3);
+  async create(params) {
+    const {
+      prompt,
+      imageUrl = [],
+      aspect_ratio = "portrait",
+      remove_watermark = true,
+      model = "sora2",
+      type = "image-to-video"
+    } = params;
+    if (!prompt) throw new Error('Parameter "prompt" diperlukan.');
+    if (!imageUrl || imageUrl.length === 0) throw new Error('Parameter "imageUrl" diperlukan untuk Sora2.');
+    await this._authenticate();
+    console.log(`🚀 Memulai tugas Sora2: ${type}`);
+    const uploadedUrls = [];
+    console.log(`Mengunggah ${imageUrl.length} gambar secara berurutan...`);
+    for (const url of imageUrl) {
+      const uploadedUrl = await this._upload(url);
+      uploadedUrls.push(uploadedUrl);
     }
-    throw new Error("Gagal mendapatkan hasil gambar setelah waktu yang lama.");
+    console.log("Semua gambar berhasil diunggah.");
+    const payload = {
+      model: model,
+      type: type,
+      prompt: prompt,
+      image_urls: uploadedUrls,
+      aspect_ratio: aspect_ratio,
+      remove_watermark: remove_watermark
+    };
+    return await this._submitSora2(payload);
+  }
+  async _submitSora2(payload) {
+    await this._logCookies("Sebelum Submit Sora2");
+    if (this.credits < 4) {
+      throw new Error(`Kredit tidak mencukupi. Dibutuhkan 4, tersedia: ${this.credits}.`);
+    }
+    console.log("⏳ Mengirim tugas Sora2...");
+    console.log("Payload:", JSON.stringify(payload, null, 2));
+    const res = await this.client.post(`${BASE_URL}/api/sora2/submit`, payload);
+    if (!res.data?.task_id) {
+      throw new Error("Gagal mengirim tugas Sora2: " + (res.data?.error || "Unknown error"));
+    }
+    this.credits = res.data.remaining_credits || this.credits - 4;
+    console.log(`✅ Tugas Sora2 berhasil dikirim. Task ID: ${res.data.task_id} | Sisa kredit: ${this.credits}`);
+    return {
+      task_id: res.data.task_id,
+      status: "submitted",
+      remaining_credits: this.credits,
+      message: "Task successfully submitted"
+    };
+  }
+  async status(params) {
+    const {
+      task_id
+    } = params;
+    if (!task_id) {
+      throw new Error('Parameter "task_id" diperlukan.');
+    }
+    await this._authenticate();
+    console.log(`⏳ Memeriksa status task: ${task_id}`);
+    const res = await this.client.get(`${BASE_URL}/api/sora2/status/${task_id}`);
+    console.log(`Status response:`, res.data);
+    return {
+      task_id: task_id,
+      status: res.data?.status || "unknown",
+      result: res.data?.result,
+      error: res.data?.error,
+      progress: res.data?.progress,
+      estimated_time: res.data?.estimated_time
+    };
   }
 }
 export default async function handler(req, res) {
-  const params = req.method === "GET" ? req.query : req.body;
-  if (!params.prompt) {
+  const {
+    action,
+    ...params
+  } = req.method === "GET" ? req.query : req.body;
+  if (!action) {
     return res.status(400).json({
-      error: "Prompt are required"
+      error: "Action is required."
     });
   }
+  const generator = new NanoBananaSora2();
   try {
-    const banana = new NanoBanana();
-    const response = await banana.generate(params);
-    return res.status(200).json(response);
+    let response;
+    switch (action) {
+      case "create":
+        if (!params.prompt) {
+          return res.status(400).json({
+            error: "Prompt is required for create."
+          });
+        }
+        if (!params.imageUrl || params.imageUrl.length === 0) {
+          return res.status(400).json({
+            error: "imageUrl are required for create."
+          });
+        }
+        response = await generator.create(params);
+        return res.status(200).json(response);
+      case "status":
+        if (!params.task_id) {
+          return res.status(400).json({
+            error: "task_id is required for status."
+          });
+        }
+        response = await generator.status(params);
+        return res.status(200).json(response);
+      default:
+        return res.status(400).json({
+          error: `Invalid action: ${action}. Supported actions are 'create', and 'status'.`
+        });
+    }
   } catch (error) {
-    res.status(500).json({
+    console.error("API Error:", error);
+    return res.status(500).json({
       error: error.message || "Internal Server Error"
     });
   }
