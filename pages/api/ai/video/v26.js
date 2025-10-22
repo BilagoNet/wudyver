@@ -471,10 +471,10 @@ class Veo3o1API {
       console.log(`Proses: Mengecek status untuk task_id ${task_id}...`);
       const statusRes = await this.api.get(this.config.endpoints.videoStatus(task_id));
       if (statusRes.data.data.status === "completed" && statusRes.data.data.successFlag === 1) {
-          console.log("Proses: Video temp, otomatis mendownload ke R2...");
-          const downloadRes = await this.api.post(this.config.endpoints.downloadR2, {
-            taskId: task_id
-          });
+        console.log("Proses: Video temp, otomatis mendownload ke R2...");
+        const downloadRes = await this.api.post(this.config.endpoints.downloadR2, {
+          taskId: task_id
+        });
         return {
           ...statusRes.data.data,
           ...downloadRes.data.data,

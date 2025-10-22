@@ -7,7 +7,6 @@ import {
   CookieJar
 } from "tough-cookie";
 import FormData from "form-data";
-
 import SpoofHead from "@/lib/spoof-head";
 import apiConfig from "@/configs/apiConfig";
 const TEMP_MAIL_API = `https://${apiConfig.DOMAIN_URL}/api/mails/v13`;
@@ -162,22 +161,17 @@ class NanoBanana {
     await this._authenticate();
     const type = imageUrl ? "image-to-image" : "text-to-image";
     console.log(`🚀 Memulai tugas: ${type} (${num_images} gambar)`);
-    
     const allResults = [];
-    
-    // Loop for of untuk generate sesuai num_images
     for (const [index, _] of Array.from({
-      length: num_images
-    }).entries()) {
+        length: num_images
+      }).entries()) {
       console.log(`\n📸 Generate ke-${index + 1}/${num_images}`);
-      
       const payload = {
         type: type,
         prompt: prompt,
-        num_images: 1, // Set ke 1 per request untuk kontrol yang lebih baik
+        num_images: 1,
         ...rest
       };
-      
       if (imageUrl) {
         const imageUrls = Array.isArray(imageUrl) ? imageUrl : [imageUrl];
         const uploadedUrls = [];
@@ -189,7 +183,6 @@ class NanoBanana {
         payload.image_urls = uploadedUrls;
         console.log("✅ Semua gambar berhasil diunggah.");
       }
-      
       const taskId = await this._submit(payload);
       const result = await this._polling(taskId);
       allResults.push({
@@ -197,16 +190,12 @@ class NanoBanana {
         taskId: taskId,
         ...result
       });
-      
       console.log(`✅ Generate ke-${index + 1} selesai!`);
-      
-      // Delay antar request untuk menghindari rate limit
       if (index < num_images - 1) {
         console.log("⏳ Menunggu 2 detik sebelum request berikutnya...");
-        await delay(2000);
+        await delay(2e3);
       }
     }
-    
     console.log(`\n🎉 SEMUA ${num_images} GAMBAR BERHASIL DIGENERATE!`);
     return {
       total: num_images,

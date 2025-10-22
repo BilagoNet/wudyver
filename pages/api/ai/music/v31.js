@@ -30,7 +30,7 @@ class MusicGenerator {
         deviceToken: deviceToken,
         type: type,
         projectId: this.projectId,
-        development: process.env.NODE_ENV !== "production"
+        development: "production"
       };
       const response = await axios.post(this.expoUrl, payload, {
         headers: {
@@ -70,7 +70,8 @@ class MusicGenerator {
         pro: true,
         ...rest
       };
-      return await this.httpClient.post("/api/generate", payload);
+      const response = await this.httpClient.post("/api/generate", payload);
+      return response.data;
     } catch (error) {
       console.error("Song generation failed:", error.message);
       throw new Error(`Song generation failed: ${error.message}`);
@@ -84,9 +85,10 @@ class MusicGenerator {
       if (!task_id || typeof task_id !== "string") {
         throw new Error("Task ID is required and must be a string");
       }
-      return await this.httpClient.get(`/api/get?ids=${task_id}`, {
+      const response = await this.httpClient.get(`/api/get?ids=${task_id}`, {
         params: rest
       });
+      return response.data;
     } catch (error) {
       console.error("Error fetching song status:", error.message);
       throw new Error(`Error fetching song status: ${error.message}`);
@@ -105,13 +107,13 @@ export default async function handler(req, res) {
   }
   const api = new MusicGenerator();
   try {
-    let response;
     const validActions = ["generate", "status"];
     if (!validActions.includes(action)) {
       return res.status(400).json({
         error: `Action tidak valid: ${action}. Action yang didukung: ${validActions.join(", ")}.`
       });
     }
+    let responseData;
     switch (action) {
       case "generate":
         if (!params.prompt) {
@@ -119,7 +121,7 @@ export default async function handler(req, res) {
             error: "Parameter 'prompt' wajib diisi."
           });
         }
-        response = await api.generate(params);
+        responseData = await api.generate(params);
         break;
       case "status":
         if (!params.task_id) {
@@ -127,10 +129,10 @@ export default async function handler(req, res) {
             error: "Parameter 'task_id' wajib diisi."
           });
         }
-        response = await api.status(params);
+        responseData = await api.status(params);
         break;
     }
-    return res.status(200).json(response);
+    return res.status(200).json(responseData);
   } catch (error) {
     console.error(`[FATAL ERROR] Kegagalan pada action '${action}':`, error);
     return res.status(500).json({

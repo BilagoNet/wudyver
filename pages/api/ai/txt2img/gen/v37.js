@@ -160,16 +160,16 @@ export default async function handler(req, res) {
   const params = req.method === "GET" ? req.query : req.body;
   if (!params.prompt) {
     return res.status(400).json({
-      error: "prompt is required"
+      error: "Prompt are required"
     });
   }
-  const ai = new ImageGenerator();
   try {
-    const data = await ai.generate(params);
-    return res.status(200).json(data);
+    const api = new ImageGenerator();
+    const response = await api.generate(params);
+    return res.status(200).json(response);
   } catch (error) {
     res.status(500).json({
-      error: "Internal Server Error"
+      error: error.message || "Internal Server Error"
     });
   }
 }

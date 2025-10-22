@@ -1,80 +1,120 @@
-const axios = require('axios');
-
+const axios = require("axios");
 class GmailApi {
-  constructor(apiKey = '33b5fc1663msha9ab0128c5449e7p13f98bjsnc0b11b98db57') {
-    this.baseUrl = 'https://temporary-gmail-account.p.rapidapi.com';
+  constructor(apiKey = "33b5fc1663msha9ab0128c5449e7p13f98bjsnc0b11b98db57") {
+    this.baseUrl = "https://temporary-gmail-account.p.rapidapi.com";
     this.apiKey = apiKey;
     this.headers = {
-      'Content-Type': 'application/json',
-      'x-rapidapi-host': 'temporary-gmail-account.p.rapidapi.com',
-      'x-rapidapi-key': this.apiKey
+      "Content-Type": "application/json",
+      "x-rapidapi-host": "temporary-gmail-account.p.rapidapi.com",
+      "x-rapidapi-key": this.apiKey
     };
-    console.log('GmailApi initialized with base URL:', this.baseUrl);
+    console.log("GmailApi initialized with base URL:", this.baseUrl);
   }
-
-  async getAccount({ generateNewAccount = 0, ...rest } = {}) {
-    console.log('Starting getAccount with params:', { generateNewAccount, ...rest });
+  async getAccount({
+    generateNewAccount = 0,
+    ...rest
+  } = {}) {
+    console.log("Starting getAccount with params:", {
+      generateNewAccount: generateNewAccount,
+      ...rest
+    });
     try {
-      const response = await axios.post(
-        `${this.baseUrl}/GmailGetAccount`,
-        { generateNewAccount, ...rest },
-        { headers: this.headers }
-      );
-      console.log('getAccount response received:', response?.data);
+      const response = await axios.post(`${this.baseUrl}/GmailGetAccount`, {
+        generateNewAccount: generateNewAccount,
+        ...rest
+      }, {
+        headers: this.headers
+      });
+      console.log("getAccount response received:", response?.data);
       return response?.data || {};
     } catch (error) {
-      console.error('getAccount error:', error?.response?.data || error.message);
+      console.error("getAccount error:", error?.response?.data || error.message);
       throw error;
     }
   }
-
-  async getMessages({ address, token, ...rest } = {}) {
-    console.log('Starting getMessages with params:', { address, token, ...rest });
+  async getMessages({
+    address,
+    token,
+    ...rest
+  } = {}) {
+    console.log("Starting getMessages with params:", {
+      address: address,
+      token: token,
+      ...rest
+    });
     try {
-      const response = await axios.post(
-        `${this.baseUrl}/GmailGetMessages`,
-        { address, token, ...rest },
-        { headers: this.headers }
-      );
-      console.log('getMessages response received:', response?.data);
+      const response = await axios.post(`${this.baseUrl}/GmailGetMessages`, {
+        address: address,
+        token: token,
+        ...rest
+      }, {
+        headers: this.headers
+      });
+      console.log("getMessages response received:", response?.data);
       return response?.data || {};
     } catch (error) {
-      console.error('getMessages error:', error?.response?.data || error.message);
+      console.error("getMessages error:", error?.response?.data || error.message);
       throw error;
     }
   }
-
-  async getMessage({ messageId, address, token, ...rest } = {}) {
-    console.log('Starting getMessage with params:', { messageId, address, token, ...rest });
+  async getMessage({
+    messageId,
+    address,
+    token,
+    ...rest
+  } = {}) {
+    console.log("Starting getMessage with params:", {
+      messageId: messageId,
+      address: address,
+      token: token,
+      ...rest
+    });
     try {
-      const response = await axios.post(
-        `${this.baseUrl}/GmailGetMessage`,
-        { messageId, address, token, ...rest },
-        { headers: this.headers }
-      );
-      console.log('getMessage response received:', response?.data);
+      const response = await axios.post(`${this.baseUrl}/GmailGetMessage`, {
+        messageId: messageId,
+        address: address,
+        token: token,
+        ...rest
+      }, {
+        headers: this.headers
+      });
+      console.log("getMessage response received:", response?.data);
       return response?.data || {};
     } catch (error) {
-      console.error('getMessage error:', error?.response?.data || error.message);
+      console.error("getMessage error:", error?.response?.data || error.message);
       throw error;
     }
   }
-
-  async downloadAttachment({ fileName, messageId, address, token, ...rest } = {}) {
-    console.log('Starting downloadAttachment with params:', { fileName, messageId, address, token, ...rest });
+  async downloadAttachment({
+    fileName,
+    messageId,
+    address,
+    token,
+    ...rest
+  } = {}) {
+    console.log("Starting downloadAttachment with params:", {
+      fileName: fileName,
+      messageId: messageId,
+      address: address,
+      token: token,
+      ...rest
+    });
     try {
-      const response = await axios.post(
-        `${this.baseUrl}/GmailAttachmentDownload`,
-        { fileName, messageId, address, token, ...rest },
-        { headers: this.headers }
-      );
-      console.log('downloadAttachment response received:', response?.data);
+      const response = await axios.post(`${this.baseUrl}/GmailAttachmentDownload`, {
+        fileName: fileName,
+        messageId: messageId,
+        address: address,
+        token: token,
+        ...rest
+      }, {
+        headers: this.headers
+      });
+      console.log("downloadAttachment response received:", response?.data);
       return response?.data || {};
     } catch (error) {
-      console.error('downloadAttachment error:', error?.response?.data || error.message);
+      console.error("downloadAttachment error:", error?.response?.data || error.message);
       throw error;
     }
   }
 }
-
 module.exports = GmailApi;

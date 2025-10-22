@@ -1108,7 +1108,7 @@ export default async function handler(req, res) {
     let host;
     const contentType = req.headers["content-type"] || "";
     if (contentType.startsWith("multipart/form-data")) {
-    console.log("multipart upload");
+      console.log("multipart upload");
       await new Promise((resolve, reject) => {
         upload.single("file")(req, res, err => {
           if (err) {
@@ -1126,7 +1126,7 @@ export default async function handler(req, res) {
       fileName = req.file.originalname;
       host = req.body.host || req.query.host || "Tmpfiles";
     } else {
-    console.log("raw upload");
+      console.log("raw upload");
       let rawBody = "";
       await new Promise((resolve, reject) => {
         req.on("data", chunk => rawBody += chunk.toString());
