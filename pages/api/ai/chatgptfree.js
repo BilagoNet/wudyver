@@ -79,12 +79,12 @@ class AiChat {
   }
   async chat({
     prompt,
-    model = "chatgpt",
+    model = "gemini",
     imageUrl = null,
     ...rest
   }) {
     await this.i();
-    model = (model || "chatgpt").toLowerCase();
+    model = (model || "gemini").toLowerCase();
     const bid = this.bots[model] ?? null;
     if (!bid) {
       const models = await this.models();
