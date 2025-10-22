@@ -1,20 +1,18 @@
 import axios from "axios";
 import https from "https";
 import crypto from "crypto";
-import SpoofHead from "@/lib/spoof-head";
 class MusicGenerator {
   constructor() {
     this.baseUrl = "https://api.magicmusic.pro";
     this.expoUrl = "https://exp.host/--/api/v2/push/updateDeviceToken";
-    this.appId = "1:548000895841:android:8b6c7fe1808a3e6ee7ab20";
-    this.projectId = "song-ai-f2539";
+    this.appId = "com.script8888.magicmusicai";
+    this.projectId = "magicmusicai-project";
     this.httpClient = axios.create({
       baseURL: this.baseUrl,
       timeout: 15e3,
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json",
-        ...SpoofHead()
+        Accept: "application/json"
       },
       httpsAgent: new https.Agent({
         rejectUnauthorized: false
@@ -32,7 +30,7 @@ class MusicGenerator {
         deviceToken: deviceToken,
         type: type,
         projectId: this.projectId,
-        development: "production"
+        development: process.env.NODE_ENV !== "production"
       };
       const response = await axios.post(this.expoUrl, payload, {
         headers: {
