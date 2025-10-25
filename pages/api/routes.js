@@ -704,6 +704,7 @@ export default function handler(req, res) {
     { path: "/api/anime/hanime/v2", name: "V2", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/anime/soulscans", name: "Soulscans", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/anime/rule34", name: "Rule34", params: [{ "name": "prompt", "in": "query", "required": false }], },
+    { path: "/api/anime/nekopoi", name: "Nekopoi", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/apps/apk4all", name: "Apk4all", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/apps/apk4free", name: "Apk4free", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/apps/apkbolt", name: "Apkbolt", params: [{ "name": "prompt", "in": "query", "required": false }], },

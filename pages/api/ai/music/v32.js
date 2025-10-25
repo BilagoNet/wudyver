@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import axios from "axios";
+import Encoder from "@/lib/encoder";
 class MusicGenerator {
   constructor() {
     this.reportUrl = "https://account-api.musicful.ai/v2/report-data";
@@ -9,6 +10,8 @@ class MusicGenerator {
     this.key = Buffer.from("147258369topmeidia96385topmeidia", "utf8");
     this.iv = Buffer.from("1597531topmeidia", "utf8");
     this.code = this.genCode();
+    this.ts = 0;
+    this.sign = "";
     console.log(`[INIT] Device ID: ${this.code}`);
   }
   genCode() {
@@ -29,58 +32,102 @@ class MusicGenerator {
       const dec = crypto.createDecipheriv("aes-256-cbc", this.key, this.iv);
       return dec.update(buf, null, "utf8") + dec.final("utf8");
     } catch (e) {
-      console.error(`[DECRYPT FAIL] ${e.message}`);
+      console.error("[DECRYPT] Failed:", e.message);
       return txt;
     }
   }
-  async auth() {
-    const ts = Date.now();
-    const sign = this.md5(this.code + ts + "member_sign");
-    const body = new URLSearchParams({
-      software_code: this.code,
-      lang: "EN",
-      source_site: "google_play",
-      information_sources: "200473",
-      operating_type: "phone-app",
-      operating_system: "android",
-      token: "",
-      timestamp: ts.toString(),
-      sign: sign
-    });
+  async enc(data) {
     const {
-      data
-    } = await axios.post(this.reportUrl, body, {
-      timeout: 1e4
+      uuid: jsonUuid
+    } = await Encoder.enc({
+      data: data,
+      method: "combined"
     });
-    if (!data || data.code !== 200) {
-      throw new Error(data?.msg || "Auth failed");
-    }
-    return data;
+    return jsonUuid;
   }
-  async reqDesc(description) {
-    if (!description) throw new Error("Description required");
+  async dec(uuid) {
+    const decryptedJson = await Encoder.dec({
+      uuid: uuid,
+      method: "combined"
+    });
+    return decryptedJson.text;
+  }
+  async auth() {
+    try {
+      this.ts = Date.now();
+      this.sign = this.md5(this.code + this.ts + "member_sign");
+      const body = new URLSearchParams({
+        software_code: this.code,
+        lang: "EN",
+        source_site: "google_play",
+        information_sources: "200473",
+        operating_type: "phone-app",
+        operating_system: "android",
+        token: "",
+        timestamp: this.ts.toString(),
+        sign: this.sign
+      });
+      console.log("[AUTH] Sending...");
+      const {
+        data
+      } = await axios.post(this.reportUrl, body, {
+        timeout: 1e4
+      });
+      if (!data || data.code !== 200) {
+        throw new Error(data?.msg || "Auth failed");
+      }
+      console.log("[AUTH] Success");
+      return {
+        code: this.code,
+        timestamp: this.ts,
+        sign: this.sign
+      };
+    } catch (error) {
+      console.error("[AUTH] Failed:", error.message);
+      throw error;
+    }
+  }
+  async reqWithAuth(url, body, auth, name) {
+    try {
+      const headers = {
+        "tourist-authorization": `Bearer ${auth.code}`
+      };
+      console.log(`[${name}] Requesting...`);
+      const {
+        data
+      } = await axios.post(url, body, {
+        headers: headers,
+        timeout: 15e3
+      });
+      if (!data || data.status !== 200) {
+        throw new Error(data?.message || "Request failed");
+      }
+      console.log(`[${name}] Success`);
+      return data.data;
+    } catch (error) {
+      console.error(`[${name}] Failed:`, error.message);
+      throw error;
+    }
+  }
+  async reqDesc(description, auth) {
+    if (!description || typeof description !== "string" || !description.trim()) {
+      throw new Error("Description required");
+    }
     const body = new URLSearchParams({
-      description: description,
+      description: description.trim(),
       instrumental: "0",
       mv: "v4.0"
     });
-    const {
-      data
-    } = await axios.post(this.descUrl, body, {
-      headers: {
-        "tourist-authorization": `Bearer ${this.code}`
-      },
-      timeout: 15e3
-    });
-    if (!data || data.status !== 200) throw new Error(data?.message || "Request failed");
-    return data.data;
+    return await this.reqWithAuth(this.descUrl, body, auth, "DESC");
   }
   async reqLyrics({
     lyrics,
     style = "pop",
     title = "Untitled"
-  }) {
-    if (!lyrics) throw new Error("Lyrics required");
+  }, auth) {
+    if (!lyrics || typeof lyrics !== "string" || !lyrics.trim()) {
+      throw new Error("Lyrics required");
+    }
     const body = new URLSearchParams({
       lyrics: lyrics.trim(),
       style: style,
@@ -88,60 +135,105 @@ class MusicGenerator {
       instrumental: "0",
       mv: "v4.0"
     });
-    const {
-      data
-    } = await axios.post(this.lyricsUrl, body, {
-      headers: {
-        "tourist-authorization": `Bearer ${this.code}`
-      },
-      timeout: 15e3
-    });
-    if (!data || data.status !== 200) throw new Error(data?.message || "Request failed");
-    return data.data;
+    return await this.reqWithAuth(this.lyricsUrl, body, auth, "LYRICS");
   }
-  async checkStatus(ids) {
-    if (!Array.isArray(ids) || ids.length === 0) throw new Error("Invalid IDs");
-    const {
-      data
-    } = await axios.get(`${this.resultUrl}?ids=${ids.join(",")}`, {
-      headers: {
-        "tourist-authorization": `Bearer ${this.code}`
-      },
-      timeout: 1e4
-    });
-    if (!data || data.status !== 200) throw new Error(data?.message || "Status check failed");
-    const result = (data.data?.result || []).map(song => ({
-      ...song,
-      audio_url: song.status === 0 ? this.decrypt(song.audio_url || "") : song.audio_url,
-      cover_url: song.status === 0 ? this.decrypt(song.cover_url || "") : song.cover_url
-    }));
-    return {
-      result: result
-    };
+  async checkSingleStatus(id, auth) {
+    try {
+      const url = `${this.resultUrl}?ids=${id}`;
+      const headers = {
+        "tourist-authorization": `Bearer ${auth.code}`
+      };
+      const {
+        data
+      } = await axios.get(url, {
+        headers: headers,
+        timeout: 1e4
+      });
+      if (!data || data.status !== 200 || !data.data?.result?.[0]) {
+        return {
+          id: id,
+          status: -1,
+          error: "Not found"
+        };
+      }
+      const song = data.data.result[0];
+      return {
+        ...song,
+        audio_url: song.status === 0 ? this.decrypt(song.audio_url || "") : song.audio_url,
+        cover_url: song.status === 0 ? this.decrypt(song.cover_url || "") : song.cover_url
+      };
+    } catch (error) {
+      return {
+        id: id,
+        status: -1,
+        error: error.message
+      };
+    }
   }
   async generate({
     mode = "prompt",
     ...params
   }) {
-    await this.auth();
-    let taskData;
-    if (mode === "lyrics") {
-      taskData = await this.reqLyrics(params);
-    } else {
-      const desc = params.prompt || params.description;
-      if (!desc) throw new Error("Prompt or description required");
-      taskData = await this.reqDesc(desc);
+    try {
+      console.log("[GENERATE] Starting...");
+      const auth = await this.auth();
+      let taskData;
+      if (mode === "lyrics") {
+        taskData = await this.reqLyrics(params, auth);
+      } else {
+        const desc = params.prompt || params.description;
+        if (!desc || typeof desc !== "string" || !desc.trim()) {
+          throw new Error("Prompt or description required");
+        }
+        taskData = await this.reqDesc(desc, auth);
+      }
+      const ids = taskData.ids || [taskData.task_id];
+      const payload = {
+        auth: auth,
+        ids: ids
+      };
+      const task_id = await this.enc(payload);
+      console.log(`[GENERATE] task_id created: ${task_id}`);
+      return {
+        task_id: task_id
+      };
+    } catch (error) {
+      console.error("[GENERATE] Failed:", error.message);
+      throw error;
     }
-    return taskData;
   }
   async status({
-    task_id,
-    ids
+    task_id
   }) {
-    const idList = task_id ? [task_id] : Array.isArray(ids) ? ids : [];
-    if (idList.length === 0) throw new Error("task_id or ids required");
-    await this.auth();
-    return await this.checkStatus(idList);
+    if (!task_id) throw new Error("task_id is required");
+    try {
+      console.log(`[STATUS] Decoding task_id: ${task_id}`);
+      const {
+        auth,
+        ids
+      } = await this.dec(task_id);
+      if (!auth || !Array.isArray(ids) || ids.length === 0) {
+        throw new Error("Invalid payload in task_id");
+      }
+      this.ts = auth.timestamp;
+      this.sign = auth.sign;
+      console.log(`[STATUS] Found ${ids.length} ID(s) to check`);
+      const results = [];
+      for (const id of ids) {
+        console.log(`[STATUS] → Checking: ${id}`);
+        const result = await this.checkSingleStatus(id, auth);
+        results.push(result);
+      }
+      const completed = results.filter(r => r.status === 0);
+      console.log(`[STATUS] Done: ${completed.length}/${results.length} completed.`);
+      return {
+        results: results,
+        completed: completed
+      };
+    } catch (error) {
+      console.error("[STATUS] Failed:", error.message);
+      throw error;
+    }
   }
 }
 export default async function handler(req, res) {
@@ -167,9 +259,9 @@ export default async function handler(req, res) {
         result = await api.generate(params);
         break;
       case "status":
-        if (!params.task_id && !params.ids) {
+        if (!params.task_id) {
           return res.status(400).json({
-            error: "Parameter 'task_id' atau 'ids' wajib diisi."
+            error: "Parameter 'task_id' wajib diisi."
           });
         }
         result = await api.status(params);
