@@ -9,6 +9,7 @@ import {
   randomBytes,
   createHash
 } from "crypto";
+import FormData from "form-data";
 import apiConfig from "@/configs/apiConfig";
 import SpoofHead from "@/lib/spoof-head";
 import PROMPT from "@/configs/ai-prompt";
@@ -439,7 +440,7 @@ class DittinAIAPI {
         }
       };
       const response = await this.api.post(this.config.endpoints.generator, payload);
-      console.log("Proses: Tugas image-gen berhasil dibuat.");
+      console.log("Proses: Tugas image_gen berhasil dibuat.");
       return {
         ...response.data,
         key: currentKey
@@ -619,7 +620,7 @@ class DittinAIAPI {
         }
       };
       const response = await this.api.post(this.config.endpoints.chat, payload);
-      console.log("Proses: Tugas chat-image berhasil dibuat.");
+      console.log("Proses: Tugas chat_image berhasil dibuat.");
       return {
         ...response.data,
         key: currentKey
@@ -630,14 +631,18 @@ class DittinAIAPI {
       throw new Error(errorMessage);
     }
   }
-  async _uploadImage(imageBuffer) {
+  async _uploadImage(imageBuffer, filename = "image.png") {
     try {
-      console.log("Proses: Mengunggah gambar untuk video-gen...");
+      console.log("Proses: Mengunggah gambar untuk video_gen...");
       const formData = new FormData();
-      formData.append("image", imageBuffer, "image.png");
+      formData.append("image", imageBuffer, {
+        filename: filename,
+        contentType: "image/png"
+      });
       const response = await this.api.post(this.config.endpoints.upload, formData, {
         headers: {
-          "Content-Type": "multipart/form-data"
+          ...formData.getHeaders(),
+          accept: "application/json"
         }
       });
       console.log("Proses: Gambar berhasil diunggah.");
@@ -646,6 +651,34 @@ class DittinAIAPI {
       const errorMessage = error.response?.data?.message || error.message;
       console.error(`Proses unggah gambar gagal: ${errorMessage}`);
       throw error;
+    }
+  }
+  async _processImageInput(imageInput) {
+    try {
+      if (Buffer.isBuffer(imageInput)) {
+        console.log("Proses: Input adalah Buffer");
+        return imageInput;
+      } else if (typeof imageInput === "string") {
+        if (imageInput.startsWith("http")) {
+          console.log("Proses: Input adalah URL, mendownload gambar...");
+          const response = await axios.get(imageInput, {
+            responseType: "arraybuffer"
+          });
+          return Buffer.from(response.data);
+        } else if (imageInput.startsWith("data:")) {
+          console.log("Proses: Input adalah Base64 data URL");
+          const base64Data = imageInput.split(",")[1];
+          return Buffer.from(base64Data, "base64");
+        } else {
+          console.log("Proses: Input adalah Base64 string");
+          return Buffer.from(imageInput, "base64");
+        }
+      } else {
+        throw new Error("Format imageUrl tidak didukung. Gunakan URL, Base64, atau Buffer.");
+      }
+    } catch (error) {
+      console.error(`Gagal memproses input gambar: ${error.message}`);
+      throw new Error(`Gagal memproses input gambar: ${error.message}`);
     }
   }
   async video_gen({
@@ -661,17 +694,7 @@ class DittinAIAPI {
         key: key
       });
       console.log("Proses: Generate video...");
-      let imageBuffer;
-      if (Buffer.isBuffer(imageUrl)) {
-        imageBuffer = imageUrl;
-      } else if (imageUrl.startsWith("http")) {
-        const response = await axios.get(imageUrl, {
-          responseType: "arraybuffer"
-        });
-        imageBuffer = Buffer.from(response.data);
-      } else {
-        imageBuffer = Buffer.from(imageUrl.replace(/^data:image\/\w+;base64,/, ""), "base64");
-      }
+      const imageBuffer = await this._processImageInput(imageUrl);
       const uploadedUrl = await this._uploadImage(imageBuffer);
       const payload = {
         action: "generateAnimateImage",
@@ -684,7 +707,7 @@ class DittinAIAPI {
         }
       };
       const response = await this.api.post(this.config.endpoints.chat, payload);
-      console.log("Proses: Tugas video-gen berhasil dibuat.");
+      console.log("Proses: Tugas video_gen berhasil dibuat.");
       return {
         ...response.data,
         key: currentKey
@@ -721,13 +744,13 @@ export default async function handler(req, res) {
         }
         response = await api.login(params);
         break;
-      case "user-info":
+      case "user_info":
         response = await api.user_info(params);
         break;
-      case "image-gen":
+      case "image_gen":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' wajib diisi untuk action 'image-gen'."
+            error: "Parameter 'prompt' wajib diisi untuk action 'image_gen'."
           });
         }
         response = await api.image_gen(params);
@@ -751,36 +774,36 @@ export default async function handler(req, res) {
         }
         response = await api.chat(params);
         break;
-      case "chat-image":
+      case "chat_image":
         if (!params.chatListId) {
           return res.status(400).json({
-            error: "Parameter 'chatListId' wajib diisi untuk action 'chat-image'."
+            error: "Parameter 'chatListId' wajib diisi untuk action 'chat_image'."
           });
         }
         response = await api.chat_image(params);
         break;
-      case "video-gen":
+      case "video_gen":
         if (!params.imageUrl) {
           return res.status(400).json({
-            error: "Parameter 'imageUrl' wajib diisi untuk action 'video-gen'."
+            error: "Parameter 'imageUrl' wajib diisi untuk action 'video_gen'."
           });
         }
         response = await api.video_gen(params);
         break;
-      case "list-key":
+      case "list_key":
         response = await api.list_key();
         break;
-      case "del-key":
+      case "del_key":
         if (!params.key) {
           return res.status(400).json({
-            error: "Parameter 'key' wajib diisi untuk action 'del-key'."
+            error: "Parameter 'key' wajib diisi untuk action 'del_key'."
           });
         }
         response = await api.del_key(params);
         break;
       default:
         return res.status(400).json({
-          error: `Action tidak valid: ${action}. Action yang didukung: 'register', 'login', 'user-info', 'image-gen', 'status', 'search', 'chat', 'chat-image', 'video-gen', 'list-key', 'del-key'.`
+          error: `Action tidak valid: ${action}. Action yang didukung: 'register', 'login', 'user_info', 'image_gen', 'status', 'search', 'chat', 'chat_image', 'video_gen', 'list_key', 'del_key'.`
         });
     }
     return res.status(200).json(response);

@@ -11,6 +11,7 @@ import {
 } from "crypto";
 import apiConfig from "@/configs/apiConfig";
 import SpoofHead from "@/lib/spoof-head";
+import PROMPT from "@/configs/ai-prompt";
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const AVAILABLE_MODELS = [{
   model: "veo3.1",
@@ -762,7 +763,7 @@ class ShotAIAPI {
   }
   async img2img({
     key,
-    prompt,
+    prompt = PROMPT.text,
     imageUrl,
     model = "gemini-2.5-flash-image",
     aspectRatio = "auto"
@@ -862,14 +863,14 @@ class ShotAIAPI {
   }
   async img2vid({
     key,
-    prompt,
+    prompt = PROMPT.text,
     imageUrl,
     model = "sora-2",
     aspectRatio = "16:9",
     duration = "10",
     resolution = "720p"
   }) {
-    return this.txt2vid({
+    return await this.txt2vid({
       key: key,
       prompt: prompt,
       imageUrl: imageUrl,
@@ -964,9 +965,9 @@ export default async function handler(req, res) {
         response = await api.txt2img(params);
         break;
       case "img2img":
-        if (!params.prompt || !params.imageUrl) {
+        if (!params.imageUrl) {
           return res.status(400).json({
-            error: "Parameter 'prompt' dan 'imageUrl' wajib diisi untuk action 'img2img'."
+            error: "Parameter 'imageUrl' wajib diisi untuk action 'img2img'."
           });
         }
         response = await api.img2img(params);
@@ -980,9 +981,9 @@ export default async function handler(req, res) {
         response = await api.txt2vid(params);
         break;
       case "img2vid":
-        if (!params.prompt || !params.imageUrl) {
+        if (!params.imageUrl) {
           return res.status(400).json({
-            error: "Parameter 'prompt' dan 'imageUrl' wajib diisi untuk action 'img2vid'."
+            error: "Parameter 'imageUrl' wajib diisi untuk action 'img2vid'."
           });
         }
         response = await api.img2vid(params);

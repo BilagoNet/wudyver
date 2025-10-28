@@ -1,6 +1,5 @@
 import axios from "axios";
 import OSS from "ali-oss";
-import SpoofHead from "@/lib/spoof-head";
 import PROMPT from "@/configs/ai-prompt";
 class VisualGPT {
   constructor() {
@@ -31,8 +30,7 @@ class VisualGPT {
       "sec-fetch-dest": "empty",
       "sec-fetch-mode": "cors",
       "sec-fetch-site": "same-origin",
-      "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36",
-      ...SpoofHead()
+      "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36"
     };
   }
   async getSTSToken() {
