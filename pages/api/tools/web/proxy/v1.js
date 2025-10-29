@@ -42,7 +42,7 @@ class AxiosClient {
   getHosts() {
     return this.baseUrls;
   }
-  async fetchData(queryHost = 23, url) {
+  async fetchData(queryHost = 26, url) {
     const baseUrl = this.baseUrls[queryHost] || this.baseUrls[1];
     if (!baseUrl) throw new Error("Invalid host query");
     try {
