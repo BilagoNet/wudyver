@@ -3,7 +3,7 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 class CosxplayScraper {
   constructor() {
-    this.proxyBaseUrl = `https://${apiConfig.DOMAIN_URL}/api/tools/web/html/v12?url=`;
+    this.proxyBaseUrl = `https://${apiConfig.DOMAIN_URL}/api/tools/web/html/v14?url=`;
   }
   async search({
     query

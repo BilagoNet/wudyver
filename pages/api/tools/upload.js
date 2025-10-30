@@ -4,10 +4,6 @@ import {
 } from "uuid";
 import crypto from "crypto";
 import {
-  createCipheriv,
-  createHash
-} from "crypto";
-import {
   FormData,
   Blob
 } from "formdata-node";
@@ -21,8 +17,6 @@ import ora from "ora";
 import chalk from "chalk";
 import _ from "lodash";
 import multer from "multer";
-import apiConfig from "@/configs/apiConfig";
-const CDN_BASE_URL = `https://${apiConfig.DOMAIN_URL}/re`;
 const referer = "https://krakenfiles.com";
 const uloadUrlRegexStr = /url: "([^"]+)"/;
 const generateSlug = crypto.createHash("md5").update(`${Date.now()}-${uuidv4()}`).digest("hex").substring(0, 8);
@@ -1096,36 +1090,30 @@ const upload = multer({
   storage: multer.memoryStorage()
 });
 
-function padHex(hex, length) {
-  return hex.length >= length ? hex.slice(0, length) : hex + "x".repeat(length - hex.length);
+function formatBytes(bytes) {
+  if (bytes === 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB", "PB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
 }
-
-function deriveKeyAndIv(url) {
-  const keyHash = createHash("sha256").update(url).digest("hex");
-  const keyHex = padHex(keyHash, 64);
-  const key = Buffer.from(keyHex, "hex");
-  const ivHash = createHash("sha256").update(url + "IV_SALT_XAI_2025").digest("hex");
-  const ivHex = padHex(ivHash, 32);
-  const iv = Buffer.from(ivHex, "hex");
-  return {
-    key: key,
-    iv: iv
-  };
-}
-
-function encryptUrl(plainUrl) {
+async function getBufferInfo(buffer) {
   try {
-    const {
-      key,
-      iv
-    } = deriveKeyAndIv(plainUrl);
-    const cipher = createCipheriv("aes-256-cbc", key, iv);
-    let encrypted = cipher.update(plainUrl, "utf8", "hex");
-    encrypted += cipher.final("hex");
-    return `${iv.toString("hex")}-${encrypted}`;
-  } catch (err) {
-    console.error("Encrypt failed:", err);
-    return null;
+    if (!Buffer.isBuffer(buffer)) throw new Error("Input bukan Buffer");
+    const info = await fileTypeFromBuffer(buffer);
+    const length = buffer.length;
+    return {
+      valid: true,
+      length: length,
+      formatted: formatBytes(length),
+      mime: info?.mime || "unknown",
+      ext: info?.ext || "unknown",
+      preview: buffer.slice(0, 16).toString("hex").toUpperCase()
+    };
+  } catch (e) {
+    return {
+      valid: false,
+      error: e.message
+    };
   }
 }
 export default async function handler(req, res) {
@@ -1228,11 +1216,13 @@ export default async function handler(req, res) {
     console.log(chalk.blue(`Mengunggah ke ${host}...`));
     try {
       const result = await uploader[host](buffer, fileName);
+      const info = await getBufferInfo(buffer);
       console.log(chalk.green(`Unggahan berhasil ke ${host}`));
       return res.status(200).json({
         result: result,
-        redirect: `${CDN_BASE_URL}/${encryptUrl(result)}`,
-        fileName: fileName
+        name: fileName,
+        host: host,
+        ...info
       });
     } catch (err) {
       console.error(chalk.red(`Gagal unggah: ${err.message}`));

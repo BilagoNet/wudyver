@@ -1,136 +1,231 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
-import apiConfig from "@/configs/apiConfig";
 class Downloader {
   constructor() {
-    this.apiHtml = `https://${apiConfig.DOMAIN_URL}/api/tools/web/html/v1`;
-    this.maxRetries = 3;
-    this.timeout = 3e5;
+    this.baseUrl = "https://www.threads.net/";
+    this.userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1";
+    this.cookies = new Map();
+  }
+  interceptCookies(headers) {
+    if (headers["set-cookie"]) {
+      const cookieHeaders = Array.isArray(headers["set-cookie"]) ? headers["set-cookie"] : [headers["set-cookie"]];
+      cookieHeaders.forEach(cookieHeader => {
+        const [cookie] = cookieHeader.split(";");
+        const [name, value] = cookie.trim().split("=");
+        if (name && value) this.cookies.set(name, value);
+      });
+    }
+  }
+  getCookieString() {
+    return Array.from(this.cookies).map(([name, value]) => `${name}=${value}`).join("; ");
   }
   async download({
-    url,
-    retryCount = 0
+    url
   }) {
     try {
-      console.log(`🔍 Fetching URL: ${url} (attempt ${retryCount + 1})`);
-      const {
-        data
-      } = await axios.get(`${this.apiHtml}?url=${encodeURIComponent(url)}`, {
-        timeout: this.timeout
-      });
-      console.log("✅ HTML fetched successfully");
-      const $ = cheerio.load(data);
-      const meta = {};
-      $("meta[property^='og:']").each((_, el) => {
-        meta[$(el).attr("property")] = $(el).attr("content");
-      });
-      const result = this.findTranscriptionData(data);
+      console.log("🔍 Starting download for:", url);
+      const result = await this.getEmbed(url);
       if (result) {
-        console.log("✅ Successfully extracted transcription data");
+        console.log("✅ Successfully parsed embed data");
         return {
           success: true,
-          meta: meta,
-          data: result
+          data: result,
+          timestamp: new Date().toISOString(),
+          cookies: Object.fromEntries(this.cookies)
         };
-      } else {
-        if (retryCount < this.maxRetries) {
-          console.log(`⚠️ No transcription data found, retrying... (${retryCount + 1}/${this.maxRetries})`);
-          await this.delay(1500 * (retryCount + 1));
-          return this.download({
-            url: url,
-            retryCount: retryCount + 1
-          });
-        }
-        console.log("❌ Max retries reached, returning meta only");
-        return {
-          success: true,
-          meta: meta,
-          data: null,
-          message: "No transcription data found"
-        };
-      }
-    } catch (error) {
-      console.error(`💥 Error in download (attempt ${retryCount + 1}):`, error.message);
-      if (retryCount < this.maxRetries && this.isRetryableError(error)) {
-        console.log(`🔄 Retrying due to error... (${retryCount + 1}/${this.maxRetries})`);
-        await this.delay(1500 * (retryCount + 1));
-        return this.download({
-          url: url,
-          retryCount: retryCount + 1
-        });
       }
       return {
         success: false,
-        error: "Fetch failed",
-        errorDetails: {
-          message: error.message,
-          code: error.code,
-          url: url,
-          attempts: retryCount + 1
-        }
-      };
-    }
-  }
-  findTranscriptionData(content) {
-    try {
-      const $ = cheerio.load(content);
-      let scriptContent;
-      $("script").each((_, script) => {
-        const data = script.children[0]?.data;
-        if (data?.includes("username") && data?.includes("original_width")) {
-          scriptContent = data;
-          return false;
-        }
-      });
-      if (!scriptContent) return null;
-      const parsedData = JSON.parse(scriptContent);
-      console.log(scriptContent);
-      const result = parsedData.require?.[0]?.[3]?.[0]?.__bbox?.require?.[0]?.[3]?.[1]?.__bbox?.result;
-      const post = result?.data?.data?.edges?.[0]?.node?.thread_items?.[0]?.post;
-      if (!post) return null;
-      const attachments = [];
-      if (post.video_versions?.length) attachments.push({
-        type: "Video",
-        url: post.video_versions[0].url
-      });
-      if (post.carousel_media?.length) {
-        for (const item of post.carousel_media) {
-          if (item.image_versions2?.candidates?.length) attachments.push({
-            type: "Photo",
-            url: item.image_versions2.candidates[0].url
-          });
-          if (item.video_versions?.length) attachments.push({
-            type: "Video",
-            url: item.video_versions[0].url
-          });
-        }
-      }
-      if (post.audio?.audio_src) attachments.push({
-        type: "Audio",
-        url: post.audio.audio_src
-      });
-      return {
-        id: post.pk,
-        message: post.caption?.text || "Không có tiêu đề",
-        like_count: post.like_count || 0,
-        reply_count: post.text_post_app_info?.direct_reply_count || 0,
-        repost_count: post.text_post_app_info?.repost_count || 0,
-        quote_count: post.text_post_app_info?.quote_count || 0,
-        author: post.user?.username,
-        short_code: post.code,
-        taken_at: post.taken_at,
-        attachments: attachments
+        error: "Failed to parse embed data",
+        timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.error("💥 Error in findTranscriptionData:", error.message);
-      return null;
+      console.error("❌ Download error:", error);
+      return {
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
     }
   }
-  isRetryableError(error) {
-    return !error.response || error.response.status >= 500 || ["ECONNABORTED", "ENOTFOUND"].includes(error.code);
+  async getEmbed(url) {
+    try {
+      const {
+        username,
+        postId
+      } = this.extractIds(url);
+      if (!postId) throw new Error("Invalid URL - No post ID found");
+      const embedUrl = username ? `${this.baseUrl}${username}/post/${postId}/embed` : `${this.baseUrl}t/${postId}/embed`;
+      console.log("📡 Fetching embed:", embedUrl);
+      const response = await axios.get(embedUrl, {
+        headers: {
+          "User-Agent": this.userAgent,
+          Cookie: this.getCookieString(),
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.5"
+        },
+        timeout: 3e4
+      });
+      this.interceptCookies(response.headers);
+      if (response.status !== 200) {
+        throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+      }
+      return this.parseHTML(response.data, url);
+    } catch (error) {
+      console.error("Embed fetch error:", error.message);
+      throw error;
+    }
   }
-  delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  parseHTML(html, url) {
+    const $ = cheerio.load(html);
+    return {
+      url: url,
+      user: {
+        username: $(".HeaderContainer .NameContainer span").text().trim(),
+        avatar: {
+          url: $(".AvatarContainer img").attr("src"),
+          alt: $(".AvatarContainer img").attr("alt"),
+          dimensions: {
+            height: $(".AvatarContainer img").attr("height"),
+            width: $(".AvatarContainer img").attr("width")
+          }
+        },
+        facepile: {
+          topRight: this.getImageData($(".FacepileTopRight img")),
+          left: this.getImageData($(".FacepileLeft img")),
+          bottom: this.getImageData($(".FacepileBottom img"))
+        }
+      },
+      content: {
+        timestamp: $(".HeaderContainer .Timestamp").text().trim(),
+        caption: $(".BodyTextContainer span").text().trim(),
+        fullText: $(".TextContentContainer").text().trim(),
+        hashtags: this.extractHashtags($(".BodyTextContainer span").text())
+      },
+      media: this.getMediaData($),
+      engagement: this.getEngagementData($),
+      metadata: {
+        pageTitle: $("title").text().trim(),
+        scripts: $("script[src]").map((i, el) => $(el).attr("src")).get(),
+        styles: $('link[rel="stylesheet"]').map((i, el) => $(el).attr("href")).get(),
+        hasThreadline: $(".ThreadlineContainer").length > 0,
+        hasSwirl: $(".Swirl").length > 0
+      },
+      raw: {
+        avatarUrl: $(".AvatarContainer img").attr("src"),
+        videoUrl: $(".SingleInnerMediaContainerVideo video source").attr("src"),
+        imageUrl: $(".SingleInnerMediaContainer img").attr("src"),
+        scriptData: this.extractScriptData($)
+      }
+    };
+  }
+  getImageData($img) {
+    if (!$img.length) return null;
+    return {
+      url: $img.attr("src"),
+      alt: $img.attr("alt"),
+      height: $img.attr("height"),
+      width: $img.attr("width")
+    };
+  }
+  getMediaData($) {
+    const videoSource = $(".SingleInnerMediaContainerVideo video source");
+    const image = $(".SingleInnerMediaContainer img");
+    if (videoSource.length) {
+      return {
+        type: "video",
+        url: videoSource.attr("src"),
+        attributes: {
+          controls: $("video").attr("controls") === "1",
+          loop: $("video").attr("loop") === "1"
+        },
+        container: "SingleInnerMediaContainerVideo"
+      };
+    } else if (image.length) {
+      return {
+        type: "image",
+        url: image.attr("src"),
+        dimensions: {
+          height: image.attr("height"),
+          width: image.attr("width")
+        },
+        container: "SingleInnerMediaContainer"
+      };
+    }
+    return {
+      type: "unknown",
+      url: null
+    };
+  }
+  getEngagementData($) {
+    const stats = {};
+    const icons = $(".ActionBarIcon");
+    icons.each((i, icon) => {
+      const $icon = $(icon);
+      const count = $icon.find(".ActionBarCount").text().trim();
+      const svg = $icon.find("svg").html() || "";
+      if (svg.includes('d="M1 7.65954')) {
+        stats.likes = {
+          count: this.parseCount(count),
+          raw: count
+        };
+      } else if (svg.includes('d="M20.65647,17.00793')) {
+        stats.comments = {
+          count: this.parseCount(count),
+          raw: count
+        };
+      } else if (svg.includes('d="M19.99805,9.49707')) {
+        stats.reposts = {
+          count: this.parseCount(count),
+          raw: count
+        };
+      } else if (svg.includes('x1="22" y1="2.9996"')) {
+        stats.shares = {
+          count: this.parseCount(count),
+          raw: count
+        };
+      }
+    });
+    return stats;
+  }
+  parseCount(text) {
+    if (!text) return 0;
+    if (text.includes("rb")) {
+      const num = parseFloat(text.replace(" rb", "").replace(",", "."));
+      return Math.round(num * 1e3);
+    }
+    return parseInt(text.replace(/,/g, "")) || 0;
+  }
+  extractHashtags(text) {
+    if (!text) return [];
+    const hashtags = text.match(/#[\w\u0590-\u05ff]+/g) || [];
+    return hashtags.map(tag => tag.replace("#", ""));
+  }
+  extractScriptData($) {
+    const data = {};
+    $("script").each((i, script) => {
+      const content = $(script).html();
+      if (content) {
+        const videoMatch = content.match(/"video_url":"([^"]+)"/);
+        const imageMatch = content.match(/"display_url":"([^"]+)"/);
+        const userMatch = content.match(/"username":"([^"]+)"/);
+        if (videoMatch) data.videoUrl = videoMatch[1].replace(/\\u0026/g, "&");
+        if (imageMatch) data.imageUrl = imageMatch[1].replace(/\\u0026/g, "&");
+        if (userMatch) data.username = userMatch[1];
+      }
+    });
+    return data;
+  }
+  extractIds(url) {
+    const userMatch = url.match(/threads\.net\/([^\/]+)/);
+    const postMatch = url.match(/post\/([^\/]+)/) || url.match(/t\/([^\/]+)/);
+    return {
+      username: userMatch ? userMatch[1].replace("@", "") : null,
+      postId: postMatch ? postMatch[1] : null
+    };
+  }
+  setCookie(name, value) {
+    this.cookies.set(name, value);
   }
 }
 export default async function handler(req, res) {
