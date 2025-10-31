@@ -800,7 +800,7 @@ export default async function handler(req, res) {
         if (!params.imageUrl) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'imageUrl' diperlukan."
+            message: "Paramenter 'imageUrl' diperlukan."
           });
         }
         const animationResult = await imgEdit.animation(params);
@@ -809,7 +809,7 @@ export default async function handler(req, res) {
         if (!params.imageUrl) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'imageUrl' diperlukan."
+            message: "Paramenter 'imageUrl' diperlukan."
           });
         }
         const backgroundResult = await imgEdit.background(params);
@@ -818,7 +818,7 @@ export default async function handler(req, res) {
         if (!params.imageUrl) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'imageUrl' diperlukan."
+            message: "Paramenter 'imageUrl' diperlukan."
           });
         }
         const cartoonResult = await imgEdit.cartoon(params);
@@ -827,7 +827,7 @@ export default async function handler(req, res) {
         if (!params.imageUrl || !params.markUrl) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'imageUrl' dan 'markUrl' diperlukan."
+            message: "Paramenter 'imageUrl' dan 'markUrl' diperlukan."
           });
         }
         const eraserResult = await imgEdit.eraser(params);
@@ -836,7 +836,7 @@ export default async function handler(req, res) {
         if (!params.imageUrl) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'imageUrl' diperlukan."
+            message: "Paramenter 'imageUrl' diperlukan."
           });
         }
         const expandResult = await imgEdit.expand(params);
@@ -845,7 +845,7 @@ export default async function handler(req, res) {
         if (!params.imageUrl) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'imageUrl' diperlukan."
+            message: "Paramenter 'imageUrl' diperlukan."
           });
         }
         const filterResult = await imgEdit.filter(params);
@@ -854,7 +854,7 @@ export default async function handler(req, res) {
         if (!params.imageUrl) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'imageUrl' diperlukan."
+            message: "Paramenter 'imageUrl' diperlukan."
           });
         }
         const img2imgResult = await imgEdit.img2img(params);
@@ -863,7 +863,7 @@ export default async function handler(req, res) {
         if (!params.imageUrl) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'imageUrl' diperlukan."
+            message: "Paramenter 'imageUrl' diperlukan."
           });
         }
         const removeBgResult = await imgEdit.removebg(params);
@@ -872,7 +872,7 @@ export default async function handler(req, res) {
         if (!params.imageUrl || !params.markUrl) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'imageUrl' dan 'markUrl' diperlukan."
+            message: "Paramenter 'imageUrl' dan 'markUrl' diperlukan."
           });
         }
         const removewmResult = await imgEdit.removewm(params);
@@ -881,7 +881,7 @@ export default async function handler(req, res) {
         if (!params.maskUrl || !params.imageUrl) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'maskUrl' dan 'imageUrl' diperlukan."
+            message: "Paramenter 'maskUrl' dan 'imageUrl' diperlukan."
           });
         }
         const replaceResult = await imgEdit.replace(params);
@@ -890,7 +890,7 @@ export default async function handler(req, res) {
         if (!params.imageUrl) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'imageUrl' diperlukan."
+            message: "Paramenter 'imageUrl' diperlukan."
           });
         }
         const restorationResult = await imgEdit.restoration(params);
@@ -899,7 +899,7 @@ export default async function handler(req, res) {
         if (!params.imageUrl) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'imageUrl' diperlukan."
+            message: "Paramenter 'imageUrl' diperlukan."
           });
         }
         const signbgResult = await imgEdit.signbg(params);
@@ -908,7 +908,7 @@ export default async function handler(req, res) {
         if (!params.imageUrl) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'imageUrl' diperlukan."
+            message: "Paramenter 'imageUrl' diperlukan."
           });
         }
         const sketchResult = await imgEdit.sketch(params);
@@ -917,7 +917,7 @@ export default async function handler(req, res) {
         if (!params.markUrl || !params.imageUrl) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'markUrl' dan 'imageUrl' diperlukan."
+            message: "Paramenter 'markUrl' dan 'imageUrl' diperlukan."
           });
         }
         const swapResult = await imgEdit.swap(params);
@@ -926,7 +926,7 @@ export default async function handler(req, res) {
         if (!params.content) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'content' diperlukan."
+            message: "Paramenter 'content' diperlukan."
           });
         }
         const txt2imgResult = await imgEdit.txt2img(params);
@@ -935,7 +935,7 @@ export default async function handler(req, res) {
         if (!params.imageUrl) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'imageUrl' diperlukan."
+            message: "Paramenter 'imageUrl' diperlukan."
           });
         }
         const unblurResult = await imgEdit.unblur(params);
@@ -944,7 +944,7 @@ export default async function handler(req, res) {
         if (!params.imageUrl) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'imageUrl' diperlukan."
+            message: "Paramenter 'imageUrl' diperlukan."
           });
         }
         const uploadResult = await imgEdit.upload(params);

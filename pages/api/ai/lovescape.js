@@ -300,7 +300,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new Lovescape();
@@ -310,7 +310,7 @@ export default async function handler(req, res) {
       case "chat":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' wajib diisi untuk action 'chat'."
+            error: "Paramenter 'prompt' wajib diisi untuk action 'chat'."
           });
         }
         response = await api.chat(params);
@@ -318,7 +318,7 @@ export default async function handler(req, res) {
       case "image":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' wajib diisi untuk action 'image'."
+            error: "Paramenter 'prompt' wajib diisi untuk action 'image'."
           });
         }
         response = await api.image(params);

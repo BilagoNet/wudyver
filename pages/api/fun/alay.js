@@ -4,7 +4,7 @@ export default function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!text) {
     return res.status(400).json({
-      error: "Parameter 'text' diperlukan"
+      error: "Paramenter 'text' diperlukan"
     });
   }
   const result = text.replace(/[a-z]/gi, v => Math.random() > .5 ? v[["toLowerCase", "toUpperCase"][Math.floor(2 * Math.random())]]() : v).replace(/[abegiors]/gi, v => {

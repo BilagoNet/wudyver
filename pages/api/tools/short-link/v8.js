@@ -116,7 +116,7 @@ export default async function handler(req, res) {
   const params = req.method === "GET" ? req.query : req.body;
   if (!params.url) {
     return res.status(400).json({
-      error: "Parameter 'url' dibutuhkan."
+      error: "Paramenter 'url' dibutuhkan."
     });
   }
   try {

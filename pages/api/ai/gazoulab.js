@@ -143,7 +143,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' dibutuhkan."
+      error: "Paramenter 'action' dibutuhkan."
     });
   }
   const api = new GazouLab();
@@ -153,7 +153,7 @@ export default async function handler(req, res) {
       case "replace_bg":
         if (!params.imageUrl) {
           return res.status(400).json({
-            error: "Parameter 'imageUrl' dibutuhkan untuk action 'replace_bg'."
+            error: "Paramenter 'imageUrl' dibutuhkan untuk action 'replace_bg'."
           });
         }
         response = await api.replace_bg(params);
@@ -161,7 +161,7 @@ export default async function handler(req, res) {
       case "remove_bg":
         if (!params.imageUrl) {
           return res.status(400).json({
-            error: "Parameter 'imageUrl' dibutuhkan untuk action 'remove_bg'."
+            error: "Paramenter 'imageUrl' dibutuhkan untuk action 'remove_bg'."
           });
         }
         response = await api.remove_bg(params);
@@ -169,7 +169,7 @@ export default async function handler(req, res) {
       case "upscale":
         if (!params.imageUrl) {
           return res.status(400).json({
-            error: "Parameter 'imageUrl' dibutuhkan untuk action 'upscale'."
+            error: "Paramenter 'imageUrl' dibutuhkan untuk action 'upscale'."
           });
         }
         response = await api.upscale(params);

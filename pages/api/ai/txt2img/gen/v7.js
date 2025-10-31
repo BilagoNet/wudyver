@@ -119,7 +119,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' dibutuhkan."
+      error: "Paramenter 'action' dibutuhkan."
     });
   }
   const api = new NetwrckAPI();
@@ -129,7 +129,7 @@ export default async function handler(req, res) {
       case "chat":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' dibutuhkan untuk action 'chat'."
+            error: "Paramenter 'prompt' dibutuhkan untuk action 'chat'."
           });
         }
         response = await api.chat(params);
@@ -137,7 +137,7 @@ export default async function handler(req, res) {
       case "image":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' dibutuhkan untuk action 'image'."
+            error: "Paramenter 'prompt' dibutuhkan untuk action 'image'."
           });
         }
         response = await api.image(params);

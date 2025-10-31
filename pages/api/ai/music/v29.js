@@ -370,7 +370,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new DeepSongAPI();
@@ -388,14 +388,14 @@ export default async function handler(req, res) {
         break;
       case "credit":
         if (!params.key) return res.status(400).json({
-          error: "Parameter 'key' wajib diisi."
+          error: "Paramenter 'key' wajib diisi."
         });
         response = await api.credit(params);
         break;
       case "generate":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' wajib diisi."
+            error: "Paramenter 'prompt' wajib diisi."
           });
         }
         response = await api.generate(params);
@@ -403,7 +403,7 @@ export default async function handler(req, res) {
       case "status":
         if (!params.key || !params.task_id) {
           return res.status(400).json({
-            error: "Parameter 'key' dan 'task_id' wajib diisi."
+            error: "Paramenter 'key' dan 'task_id' wajib diisi."
           });
         }
         response = await api.status(params);
@@ -414,7 +414,7 @@ export default async function handler(req, res) {
       case "del_key":
         if (!params.key) {
           return res.status(400).json({
-            error: "Parameter 'key' wajib diisi."
+            error: "Paramenter 'key' wajib diisi."
           });
         }
         response = await api.del_key(params);

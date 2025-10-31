@@ -63,7 +63,7 @@ class AxiosScinito {
     ...rest
   }) {
     if (!query) {
-      console.error("Proses: Gagal! Parameter `query` wajib diisi.");
+      console.error("Proses: Gagal! Paramenter `query` wajib diisi.");
       return {
         success: false,
         error: "Input tidak valid. Harap berikan `query` string.",

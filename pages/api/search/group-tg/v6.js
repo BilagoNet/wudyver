@@ -23,7 +23,7 @@ class TgramScraper {
   async detail({
     url
   }) {
-    if (!url) throw new Error("Parameter `url` wajib diisi.");
+    if (!url) throw new Error("Paramenter `url` wajib diisi.");
     try {
       const {
         data
@@ -56,7 +56,7 @@ class TgramScraper {
     detail = true,
     ...rest
   }) {
-    if (!query) throw new Error("Parameter `query` wajib diisi.");
+    if (!query) throw new Error("Paramenter `query` wajib diisi.");
     try {
       const {
         data
@@ -115,7 +115,7 @@ export default async function handler(req, res) {
   const params = req.method === "GET" ? req.query : req.body;
   if (!params.query) {
     return res.status(400).json({
-      error: "Parameter 'query' is required."
+      error: "Paramenter 'query' is required."
     });
   }
   const scraper = new TgramScraper();

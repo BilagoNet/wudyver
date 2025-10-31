@@ -41,7 +41,7 @@ class QobuzAPI {
     limit = 10
   } = {}) {
     if (!query) {
-      console.error("❌ Parameter 'query' harus disertakan.");
+      console.error("❌ Paramenter 'query' harus disertakan.");
       return null;
     }
     return this.get("/get-music", {
@@ -56,7 +56,7 @@ class QobuzAPI {
     album_id
   } = {}) {
     if (!album_id) {
-      console.error("❌ Parameter 'album_id' harus disertakan.");
+      console.error("❌ Paramenter 'album_id' harus disertakan.");
       return null;
     }
     return this.get("/get-album", {
@@ -71,7 +71,7 @@ class QobuzAPI {
     signal
   } = {}) {
     if (!track_id) {
-      console.error("❌ Parameter 'track_id' harus disertakan.");
+      console.error("❌ Paramenter 'track_id' harus disertakan.");
       return null;
     }
     return this.get("/download-music", {
@@ -89,7 +89,7 @@ class QobuzAPI {
     release_type
   } = {}) {
     if (!artist_id) {
-      console.error("❌ Parameter 'artist_id' harus disertakan.");
+      console.error("❌ Paramenter 'artist_id' harus disertakan.");
       return null;
     }
     const params = {
@@ -108,7 +108,7 @@ class QobuzAPI {
     artist_id
   } = {}) {
     if (!artist_id) {
-      console.error("❌ Parameter 'artist_id' harus disertakan.");
+      console.error("❌ Paramenter 'artist_id' harus disertakan.");
       return null;
     }
     return this.get("/get-artist", {

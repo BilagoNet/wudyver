@@ -128,7 +128,7 @@ export default async function handler(req, res) {
   const params = req.method === "POST" ? req.body : req.query;
   if (!params.quote) {
     return res.status(400).json({
-      error: "Parameter 'quote' dibutuhkan."
+      error: "Paramenter 'quote' dibutuhkan."
     });
   }
   try {

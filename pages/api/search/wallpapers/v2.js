@@ -9,7 +9,7 @@ class ArtvyAPI {
     };
   }
   async searchImage(query) {
-    if (!query) throw new Error('Parameter "query" harus diisi.');
+    if (!query) throw new Error('Paramenter "query" harus diisi.');
     const url = `${this.baseUrl}?query=${encodeURIComponent(query)}`;
     try {
       const response = await axios.get(url, {
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
   const params = req.method === "GET" ? req.query : req.body;
   const artvy = new ArtvyAPI();
   if (!params.query) return res.status(400).json({
-    error: 'Parameter "query" wajib disertakan.'
+    error: 'Paramenter "query" wajib disertakan.'
   });
   try {
     const response = await artvy.searchImage(params.query);

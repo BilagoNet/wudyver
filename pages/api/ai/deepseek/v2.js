@@ -59,7 +59,7 @@ class FutureChat {
       };
     }
     if (think !== undefined && typeof think !== "boolean") {
-      console.error('Ralat: Parameter "think" tidak sah.');
+      console.error('Ralat: Paramenter "think" tidak sah.');
       return {
         success: false,
         code: 400,

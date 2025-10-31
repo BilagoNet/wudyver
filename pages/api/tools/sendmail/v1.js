@@ -16,7 +16,7 @@ class EmailSender {
   }) {
     try {
       if (!to || !from || !subject || !message) {
-        throw new Error('Parameter "to", "from", "subject", dan "message" wajib diisi.');
+        throw new Error('Paramenter "to", "from", "subject", dan "message" wajib diisi.');
       }
       const body = new URLSearchParams({
         to: to,

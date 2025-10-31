@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     } = req.query;
     if (!expr) {
       return res.status(400).json({
-        error: "Parameter 'expr' diperlukan."
+        error: "Paramenter 'expr' diperlukan."
       });
     }
     try {

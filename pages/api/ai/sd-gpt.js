@@ -51,7 +51,7 @@ class GPTModel {
     model = "gpt4"
   }) {
     if (!prompt) {
-      throw new Error("Parameter 'prompt' wajib diisi.");
+      throw new Error("Paramenter 'prompt' wajib diisi.");
     }
     console.log(`Memulai generate dengan model: ${model}`);
     if (model === "gpt4") {

@@ -48,7 +48,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!imageUrl || !prompt) {
     return res.status(400).json({
-      error: "Parameter 'imageUrl' dan 'prompt' diperlukan"
+      error: "Paramenter 'imageUrl' dan 'prompt' diperlukan"
     });
   }
   try {

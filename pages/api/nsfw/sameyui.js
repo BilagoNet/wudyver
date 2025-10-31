@@ -37,7 +37,7 @@ export default async function handler(req, res) {
       case "search":
         if (!query) {
           return res.status(400).json({
-            error: 'Parameter "query" is required'
+            error: 'Paramenter "query" is required'
           });
         }
         const searchResponse = await axios.get(`https://same.yui.pw/api/v4/search/${query}/${sort}/${page}/`);
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
       case "book":
         if (!id) {
           return res.status(400).json({
-            error: 'Parameter "id" is required'
+            error: 'Paramenter "id" is required'
           });
         }
         const bookResponse = await axios.get(`https://same.yui.pw/api/v4/book/${id}`);
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
       case "related":
         if (!id) {
           return res.status(400).json({
-            error: 'Parameter "id" is required'
+            error: 'Paramenter "id" is required'
           });
         }
         const relatedResponse = await axios.get(`https://same.yui.pw/api/v4/book/${id}/related/`);

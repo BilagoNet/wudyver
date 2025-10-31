@@ -141,7 +141,7 @@ class Perplexity {
         status: false,
         code: 400,
         result: {
-          error: "Parameter salah.",
+          error: "Paramenter salah.",
           details: errors
         }
       };
@@ -189,7 +189,7 @@ class Perplexity {
         status: false,
         code: 400,
         result: {
-          error: "Parameter salah.",
+          error: "Paramenter salah.",
           details: errors
         }
       };

@@ -75,7 +75,7 @@ export default async function handler(req, res) {
     } = req.method === "GET" ? req.query : req.body;
     if (!url) {
       return res.status(400).json({
-        error: 'Parameter "url" wajib diisi.'
+        error: 'Paramenter "url" wajib diisi.'
       });
     }
     const downloader = new VideoDownloader();

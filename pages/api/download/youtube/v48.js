@@ -125,7 +125,7 @@ class StellarDownloader {
       const validatedVideoFormatId = this._validateId(videoFormatId, "videoFormatId");
       const validatedAudioFormatId = this._validateId(audioFormatId, "audioFormatId");
       if (!validatedVideoFormatId && !validatedAudioFormatId) {
-        const error = "Parameter protokol multimedia tidak mencukupi: diperlukan ID format video atau audio.";
+        const error = "Paramenter protokol multimedia tidak mencukupi: diperlukan ID format video atau audio.";
         console.error(`%c[Kesalahan] ${error}`, "color: #e53e3e; font-weight: bold;");
         throw new Error(error);
       }

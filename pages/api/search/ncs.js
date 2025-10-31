@@ -719,7 +719,7 @@ export default async function handler(req, res) {
   if (!action) {
     return res.status(400).json({
       success: false,
-      error: "Parameter 'action' wajib diisi.",
+      error: "Paramenter 'action' wajib diisi.",
       availableActions: ["home", "search", "detail", "getDownloadInfo", "download", "completeScraping", "getGenres", "getMoods"]
     });
   }
@@ -742,7 +742,7 @@ export default async function handler(req, res) {
         if (!params.q && !params.query) {
           return res.status(400).json({
             success: false,
-            error: "Parameter 'q' atau 'query' wajib diisi untuk action 'search'."
+            error: "Paramenter 'q' atau 'query' wajib diisi untuk action 'search'."
           });
         }
         response = await scraper.search({
@@ -757,7 +757,7 @@ export default async function handler(req, res) {
         if (!params.slug && !params.url) {
           return res.status(400).json({
             success: false,
-            error: "Parameter 'slug' atau 'url' wajib diisi untuk action 'detail'."
+            error: "Paramenter 'slug' atau 'url' wajib diisi untuk action 'detail'."
           });
         }
         response = await scraper.detail({
@@ -769,7 +769,7 @@ export default async function handler(req, res) {
         if (!params.tid && !params.trackId) {
           return res.status(400).json({
             success: false,
-            error: "Parameter 'tid' atau 'trackId' wajib diisi untuk action 'getDownloadInfo'."
+            error: "Paramenter 'tid' atau 'trackId' wajib diisi untuk action 'getDownloadInfo'."
           });
         }
         response = await scraper.getDownloadInfo({
@@ -780,7 +780,7 @@ export default async function handler(req, res) {
         if (!params.tid && !params.trackId) {
           return res.status(400).json({
             success: false,
-            error: "Parameter 'tid' atau 'trackId' wajib diisi untuk action 'download'."
+            error: "Paramenter 'tid' atau 'trackId' wajib diisi untuk action 'download'."
           });
         }
         response = await scraper.download({
@@ -791,7 +791,7 @@ export default async function handler(req, res) {
         if (!params.q && !params.query) {
           return res.status(400).json({
             success: false,
-            error: "Parameter 'q' atau 'query' wajib diisi untuk action 'completeScraping'."
+            error: "Paramenter 'q' atau 'query' wajib diisi untuk action 'completeScraping'."
           });
         }
         response = await scraper.completeScraping({

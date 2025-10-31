@@ -437,14 +437,14 @@ export default async function handler(req, res) {
           });
         } else {
           return res.status(400).json({
-            message: "Parameter 'lyrics' or 'prompt' must be provided for song generation."
+            message: "Paramenter 'lyrics' or 'prompt' must be provided for song generation."
           });
         }
         break;
       case "status":
         if (!params.jobId) {
           return res.status(400).json({
-            message: "Parameter 'jobId' is required to get song status."
+            message: "Paramenter 'jobId' is required to get song status."
           });
         }
         result = await soniva.getSongStatus(params.jobId);
@@ -472,7 +472,7 @@ export default async function handler(req, res) {
       case "fcm":
         if (!params.fcmToken) {
           return res.status(400).json({
-            message: "Parameter 'fcmToken' is required to update FCM token."
+            message: "Paramenter 'fcmToken' is required to update FCM token."
           });
         }
         result = await soniva.updateFCMToken(params.fcmToken);
@@ -480,7 +480,7 @@ export default async function handler(req, res) {
       case "user_info":
         if (!userId) {
           return res.status(400).json({
-            message: "Parameter 'userId' is required to get user info."
+            message: "Paramenter 'userId' is required to get user info."
           });
         }
         result = await soniva.getUserInfo(userId);
@@ -488,7 +488,7 @@ export default async function handler(req, res) {
       case "up_title":
         if (!params.songId || !params.newTitle) {
           return res.status(400).json({
-            message: "Parameters 'songId' and 'newTitle' are required to update song title."
+            message: "Paramenters 'songId' and 'newTitle' are required to update song title."
           });
         }
         result = await soniva.updateSongTitle(params.songId, params.newTitle, userId);
@@ -496,7 +496,7 @@ export default async function handler(req, res) {
       case "del_song":
         if (!params.songIds || !Array.isArray(params.songIds) || params.songIds.length === 0) {
           return res.status(400).json({
-            message: "Parameter 'songIds' (an array of song IDs) is required to delete songs."
+            message: "Paramenter 'songIds' (an array of song IDs) is required to delete songs."
           });
         }
         result = await soniva.deleteSongs(params.songIds, userId);
@@ -504,7 +504,7 @@ export default async function handler(req, res) {
       case "sp_song":
         if (!params.songId || !params.stems || !Array.isArray(params.stems) || params.stems.length === 0) {
           return res.status(400).json({
-            message: "Parameters 'songId' and 'stems' (an array of stems) are required to separate a song."
+            message: "Paramenters 'songId' and 'stems' (an array of stems) are required to separate a song."
           });
         }
         result = await soniva.separateSong(params.songId, params.stems, userId);
@@ -512,7 +512,7 @@ export default async function handler(req, res) {
       case "sp_status":
         if (!params.jobId) {
           return res.status(400).json({
-            message: "Parameter 'jobId' is required to get separation status."
+            message: "Paramenter 'jobId' is required to get separation status."
           });
         }
         result = await soniva.getSeparationStatus(params.jobId);

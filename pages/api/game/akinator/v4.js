@@ -123,7 +123,7 @@ export default async function handler(req, res) {
         if (!sessionId || !answer) {
           return res.status(400).json({
             success: false,
-            error: "Parameter id dan answer diperlukan."
+            error: "Paramenter id dan answer diperlukan."
           });
         }
         const session = await akiSession.findById(sessionId);
@@ -153,7 +153,7 @@ export default async function handler(req, res) {
       case "back": {
         if (!sessionId) return res.status(400).json({
           success: false,
-          error: "Parameter id diperlukan."
+          error: "Paramenter id diperlukan."
         });
         const session = await akiSession.findById(sessionId);
         if (!session) return res.status(404).json({
@@ -172,7 +172,7 @@ export default async function handler(req, res) {
       case "detail": {
         if (!sessionId) return res.status(400).json({
           success: false,
-          error: "Parameter id diperlukan."
+          error: "Paramenter id diperlukan."
         });
         const session = await akiSession.findById(sessionId);
         if (!session) return res.status(404).json({
@@ -186,7 +186,7 @@ export default async function handler(req, res) {
       case "delete": {
         if (!sessionId) return res.status(400).json({
           success: false,
-          error: "Parameter id diperlukan."
+          error: "Paramenter id diperlukan."
         });
         const session = await akiSession.findByIdAndDelete(sessionId);
         if (!session) return res.status(404).json({

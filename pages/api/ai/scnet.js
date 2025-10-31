@@ -66,7 +66,7 @@ export default async function handler(req, res) {
     model: modelIndex = 1
   } = params;
   if (!query) return res.status(400).json({
-    error: 'Parameter "query" wajib disertakan.'
+    error: 'Paramenter "query" wajib disertakan.'
   });
   const chat = new ScNetChat(Number(modelIndex));
   const messageId = await chat.sendMessage(query);

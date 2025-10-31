@@ -530,7 +530,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new NanoBananaAPI();
@@ -545,19 +545,19 @@ export default async function handler(req, res) {
         break;
       case "txt2img":
         if (!params.prompt) return res.status(400).json({
-          error: "Parameter 'prompt' wajib."
+          error: "Paramenter 'prompt' wajib."
         });
         response = await api.txt2img(params);
         break;
       case "img2img":
         if (!params.imageUrl) return res.status(400).json({
-          error: "Parameter 'imageUrl' wajib."
+          error: "Paramenter 'imageUrl' wajib."
         });
         response = await api.img2img(params);
         break;
       case "status":
         if (!params.taskId) return res.status(400).json({
-          error: "Parameter 'taskId' wajib."
+          error: "Paramenter 'taskId' wajib."
         });
         response = await api.status(params);
         break;
@@ -566,7 +566,7 @@ export default async function handler(req, res) {
         break;
       case "del_key":
         if (!params.key) return res.status(400).json({
-          error: "Parameter 'key' wajib."
+          error: "Paramenter 'key' wajib."
         });
         response = await api.del_key(params);
         break;

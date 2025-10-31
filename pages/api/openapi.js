@@ -132,7 +132,7 @@ export default async function handler(req, res) {
         name: paramName,
         in: "query",
         required: required,
-        description: description || `Parameter untuk '${name}'`,
+        description: description || `Paramenter untuk '${name}'`,
         schema: {
           type: type || "string"
         },

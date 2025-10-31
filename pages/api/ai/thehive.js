@@ -410,7 +410,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new HiveAI();
@@ -422,7 +422,7 @@ export default async function handler(req, res) {
         break;
       case "generate":
         if (!params.prompt) return res.status(400).json({
-          error: "Parameter 'prompt' wajib diisi untuk action 'generate'."
+          error: "Paramenter 'prompt' wajib diisi untuk action 'generate'."
         });
         response = await api.generate(params);
         break;
@@ -431,13 +431,13 @@ export default async function handler(req, res) {
         break;
       case "profile":
         if (!params.key) return res.status(400).json({
-          error: "Parameter 'key' wajib diisi untuk action 'profile'."
+          error: "Paramenter 'key' wajib diisi untuk action 'profile'."
         });
         response = await api.getProfile(params);
         break;
       case "del_key":
         if (!params.key) return res.status(400).json({
-          error: "Parameter 'key' wajib diisi untuk action 'del_key'."
+          error: "Paramenter 'key' wajib diisi untuk action 'del_key'."
         });
         response = await api.delKey(params);
         break;

@@ -128,7 +128,7 @@ export default async function handler(req, res) {
     to
   } = req.method === "GET" ? req.query : req.body;
   if (!from || !to) return res.status(400).json({
-    error: "Parameter 'from' dan 'to' diperlukan"
+    error: "Paramenter 'from' dan 'to' diperlukan"
   });
   try {
     const jarakChecker = new JarakChecker();

@@ -144,7 +144,7 @@ class WeatherAPI {
       validation_fn: ({
         locale
       }) => locale && locale.trim() !== "",
-      error_message: "Parameter locale harus diisi.",
+      error_message: "Paramenter locale harus diisi.",
       url_builder_fn: () => `${this.api.base}${this.api.endpoints.hot_cities(locale)}&appKey=${this.app_key}&sign=${this.sign}${this._context_params()}`
     });
   }

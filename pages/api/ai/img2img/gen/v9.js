@@ -130,7 +130,7 @@ class AIGenerator {
     console.log("PROSES: Memulai alur kerja generate...");
     try {
       if (!prompt) {
-        throw new Error("Parameter `prompt` wajib diisi.");
+        throw new Error("Paramenter `prompt` wajib diisi.");
       }
       await this._ensureLogin();
       const imageArray = imageUrl ? Array.isArray(imageUrl) ? imageUrl : [imageUrl] : [];

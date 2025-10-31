@@ -104,7 +104,7 @@ export default async function handler(req, res) {
     } = req.method === "GET" ? req.query : req.body;
     if (!action) {
       return res.status(400).json({
-        error: 'Parameter "action" wajib diisi. Gunakan "search" atau "weather".'
+        error: 'Paramenter "action" wajib diisi. Gunakan "search" atau "weather".'
       });
     }
     const singulario = new Singulario();
@@ -112,7 +112,7 @@ export default async function handler(req, res) {
       case "search":
         if (!location) {
           return res.status(400).json({
-            error: 'Parameter "location" wajib diisi untuk pencarian lokasi.'
+            error: 'Paramenter "location" wajib diisi untuk pencarian lokasi.'
           });
         }
         const searchResults = await singulario.search(location);
@@ -127,7 +127,7 @@ export default async function handler(req, res) {
       case "weather":
         if (!latitude || !longitude) {
           return res.status(400).json({
-            error: 'Parameter "latitude" dan "longitude" wajib diisi untuk mendapatkan cuaca.'
+            error: 'Paramenter "latitude" dan "longitude" wajib diisi untuk mendapatkan cuaca.'
           });
         }
         const weatherData = await singulario.weather(parseFloat(latitude), parseFloat(longitude), fromMap === "true", premium === "true");
@@ -141,7 +141,7 @@ export default async function handler(req, res) {
         });
       default:
         return res.status(400).json({
-          error: 'Parameter "action" tidak valid. Gunakan "search" atau "weather".'
+          error: 'Paramenter "action" tidak valid. Gunakan "search" atau "weather".'
         });
     }
   } catch (error) {

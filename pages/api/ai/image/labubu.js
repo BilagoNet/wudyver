@@ -27,7 +27,7 @@ class LabubuAI {
   }) {
     console.log("Proses: Memulai generate gambar...");
     if (!imageUrl) {
-      console.error("Error: Parameter `imageUrl` tidak boleh kosong.");
+      console.error("Error: Paramenter `imageUrl` tidak boleh kosong.");
       return null;
     }
     try {

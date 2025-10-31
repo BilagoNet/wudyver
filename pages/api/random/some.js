@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     ...params
   } = req.method === "GET" ? req.query : req.body;
   if (!type || !query) return res.status(400).json({
-    error: "Parameter 'type' dan 'query' wajib diisi"
+    error: "Paramenter 'type' dan 'query' wajib diisi"
   });
   const endpoint = type === "animal" && validOptions.animal.includes(query) ? `animal/${query}` : type === "animu" && validOptions.animu.includes(query) ? `animu/${query}` : type === "canvas" ? Object.entries(validOptions.canvas).find(([key, list]) => query.startsWith(`${key}/`) && list.includes(query.replace(`${key}/`, "")))?.[1] && `canvas/${query}` : type === "facts" && validOptions.facts.includes(query) ? `facts/${query}` : type === "img" && validOptions.img.includes(query) ? `img/${query}` : type === "others" && validOptions.others.includes(query) ? `others/${query}` : type === "pokemon" && validOptions.pokemon.includes(query) ? `pokemon/${query}` : type === "welcome" ? "welcome" : null;
   if (!endpoint) return res.status(400).json({

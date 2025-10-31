@@ -11,13 +11,13 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' diperlukan."
+      error: "Paramenter 'action' diperlukan."
     });
   }
   if (action === "search") {
     if (!q) {
       return res.status(400).json({
-        error: "Parameter 'q' diperlukan untuk pencarian."
+        error: "Paramenter 'q' diperlukan untuk pencarian."
       });
     }
     try {
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
   if (action === "download") {
     if (!id) {
       return res.status(400).json({
-        error: "Parameter 'id' diperlukan untuk download."
+        error: "Paramenter 'id' diperlukan untuk download."
       });
     }
     try {

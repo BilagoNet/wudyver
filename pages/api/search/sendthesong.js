@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!name) {
     return res.status(400).json({
-      error: 'Parameter "name" wajib diisi.'
+      error: 'Paramenter "name" wajib diisi.'
     });
   }
   const params = new URLSearchParams({

@@ -73,7 +73,7 @@ class VeepnSmsScraper {
     if (!country) {
       return {
         success: false,
-        error: "Parameter 'country' diperlukan."
+        error: "Paramenter 'country' diperlukan."
       };
     }
     try {
@@ -98,7 +98,7 @@ class VeepnSmsScraper {
     if (!country || !number) {
       return {
         success: false,
-        error: "Parameter 'country' dan 'number' diperlukan."
+        error: "Paramenter 'country' dan 'number' diperlukan."
       };
     }
     try {
@@ -127,7 +127,7 @@ export default async function handler(req, res) {
   if (!action) {
     return res.status(400).json({
       success: false,
-      error: "Parameter 'action' diperlukan.",
+      error: "Paramenter 'action' diperlukan.",
       allowed_actions: ["country", "create", "message"],
       usage: {
         country: "GET /api/veepn-sms?action=country",

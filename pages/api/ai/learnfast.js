@@ -12,7 +12,7 @@ const extractData = input => {
 class AutoSiteChat {
   constructor(uniqueId, sessionId) {
     if (!uniqueId || !sessionId) {
-      throw new Error("Parameter 'uniqueId' dan 'sessionId' diperlukan.");
+      throw new Error("Paramenter 'uniqueId' dan 'sessionId' diperlukan.");
     }
     this.apiUrl = "https://autosite.erweima.ai/api/v1/chat";
     this.headers = {
@@ -27,7 +27,7 @@ class AutoSiteChat {
   }
   async sendMessage(prompt, fileData) {
     if (!prompt) {
-      throw new Error("Parameter 'prompt' diperlukan.");
+      throw new Error("Paramenter 'prompt' diperlukan.");
     }
     const data = {
       prompt: prompt,

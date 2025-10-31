@@ -130,7 +130,7 @@ export default async function handler(req, res) {
       case "get":
         if (!id) {
           return res.status(400).json({
-            error: "Parameter 'id' is required"
+            error: "Paramenter 'id' is required"
           });
         }
         result = await arting.get(id);
@@ -138,7 +138,7 @@ export default async function handler(req, res) {
       case "create":
         if (!id) {
           return res.status(400).json({
-            error: "Parameter 'id' is required"
+            error: "Paramenter 'id' is required"
           });
         }
         result = await arting.create(text, init_audio, language, emotion, speed);
@@ -146,7 +146,7 @@ export default async function handler(req, res) {
       case "download":
         if (!id) {
           return res.status(400).json({
-            error: "Parameter 'id' is required"
+            error: "Paramenter 'id' is required"
           });
         }
         const audioBuffer = await arting.download(id);

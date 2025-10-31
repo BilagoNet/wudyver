@@ -20,7 +20,7 @@ class SnonLyricGenerator {
     mood
   }) {
     if (!prompt || typeof prompt !== "string") {
-      throw new Error('Parameter "prompt" must be a non-empty string.');
+      throw new Error('Paramenter "prompt" must be a non-empty string.');
     }
     try {
       const response = await fetch(this.baseUrl, {
@@ -51,7 +51,7 @@ export default async function SnonLyricHandler(req, res) {
   const params = req.method === "POST" ? req.body : req.query;
   if (!params.prompt) {
     return res.status(400).json({
-      error: 'Parameter "prompt" is required.'
+      error: 'Paramenter "prompt" is required.'
     });
   }
   try {

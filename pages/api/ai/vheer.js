@@ -296,7 +296,7 @@ class VheerAPI {
     ...rest
   }) {
     console.log("🎬 Starting img2vid generation...");
-    console.log("📝 Parameters:", {
+    console.log("📝 Paramenters:", {
       prompt: prompt,
       imageUrl: imageUrl.substring(0, 50) + "...",
       width: width,

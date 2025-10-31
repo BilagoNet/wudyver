@@ -118,7 +118,7 @@ export default async function handler(req, res) {
         if (!query) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'query' diperlukan untuk pencarian"
+            message: "Paramenter 'query' diperlukan untuk pencarian"
           });
         }
         const searchResults = await ephoto.search(query);
@@ -127,7 +127,7 @@ export default async function handler(req, res) {
         if (!url || typeof url !== "string" || !url.startsWith("https://")) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'url' tidak valid atau tidak diberikan"
+            message: "Paramenter 'url' tidak valid atau tidak diberikan"
           });
         }
         let textInput = [];
@@ -152,7 +152,7 @@ export default async function handler(req, res) {
       default:
         return res.status(400).json({
           success: false,
-          message: `Parameter 'action' tidak valid. Supported actions: ${supportedActions.join(", ")}`
+          message: `Paramenter 'action' tidak valid. Supported actions: ${supportedActions.join(", ")}`
         });
     }
   } catch (error) {

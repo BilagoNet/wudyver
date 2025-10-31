@@ -111,7 +111,7 @@ export default async function handler(req, res) {
   if (!url) {
     return res.status(400).json({
       status: "error",
-      message: "Parameter 'url' wajib diisi"
+      message: "Paramenter 'url' wajib diisi"
     });
   }
   const terabox = new Terabox();

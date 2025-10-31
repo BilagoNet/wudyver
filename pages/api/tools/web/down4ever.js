@@ -51,7 +51,7 @@ export default async function handler(req, res) {
     } = req.method === "GET" ? req.query : req.body;
     if (!link) {
       return res.status(400).json({
-        error: 'Parameter "url" harus diisi untuk memeriksa status website.'
+        error: 'Paramenter "url" harus diisi untuk memeriksa status website.'
       });
     }
     const websiteStatus = await checkWebsite(link);

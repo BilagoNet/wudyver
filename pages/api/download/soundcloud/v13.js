@@ -80,9 +80,9 @@ class ForhubDownloader {
   }) {
     if (!url) return {
       success: false,
-      error: "Parameter URL tidak ada.",
+      error: "Paramenter URL tidak ada.",
       downloadLinks: [],
-      messages: ["Parameter URL tidak ada."]
+      messages: ["Paramenter URL tidak ada."]
     };
     try {
       await this._ensureSessionAndToken();

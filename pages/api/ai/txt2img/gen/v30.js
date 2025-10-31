@@ -237,7 +237,7 @@ class AifreeforeverClient {
       }
     }, 1e3);
   }
-  validateParameters({
+  validateParamenters({
     outputFormat
   } = {}) {
     const errors = [];
@@ -254,7 +254,7 @@ class AifreeforeverClient {
     console.log("Prompt:", prompt);
     console.log("Additional parameters:", rest);
     try {
-      const validationErrors = this.validateParameters(rest);
+      const validationErrors = this.validateParamenters(rest);
       if (validationErrors.length > 0) {
         throw new Error(validationErrors.join("; "));
       }

@@ -105,7 +105,7 @@ class YouTubeDownloader {
     type = "mp3"
   }) {
     if (!query) {
-      const err = new Error("Parameter 'query' (berisi query pencarian atau URL YouTube) wajib diisi.");
+      const err = new Error("Paramenter 'query' (berisi query pencarian atau URL YouTube) wajib diisi.");
       console.error(`[ERROR] ${err.message}`);
       throw err;
     }

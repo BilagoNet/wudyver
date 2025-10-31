@@ -303,7 +303,7 @@ export default async function handler(req, res) {
             success: false,
             code: 400,
             result: {
-              error: "Parameter 'query' diperlukan untuk aksi 'search'."
+              error: "Paramenter 'query' diperlukan untuk aksi 'search'."
             }
           });
         }
@@ -318,7 +318,7 @@ export default async function handler(req, res) {
             success: false,
             code: 400,
             result: {
-              error: "Parameter 'url' diperlukan untuk aksi 'details'."
+              error: "Paramenter 'url' diperlukan untuk aksi 'details'."
             }
           });
         }
@@ -344,7 +344,7 @@ export default async function handler(req, res) {
             success: false,
             code: 400,
             result: {
-              error: "Parameter 'url' diperlukan untuk aksi 'download'."
+              error: "Paramenter 'url' diperlukan untuk aksi 'download'."
             }
           });
         }

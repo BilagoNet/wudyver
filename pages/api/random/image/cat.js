@@ -12,25 +12,25 @@ export default async function handler(req, res) {
   let message = "";
   if (text && !size && !color) {
     apiUrl = `https://cataas.com/cat/says/${text}`;
-    message = "Parameter diperlukan: text (teks untuk dikatakan oleh kucing)";
+    message = "Paramenter diperlukan: text (teks untuk dikatakan oleh kucing)";
   } else if (text && size) {
     apiUrl = `https://cataas.com/cat/says/${text}?size=${size}`;
-    message = "Parameter diperlukan: text (teks) dan size (ukuran teks)";
+    message = "Paramenter diperlukan: text (teks) dan size (ukuran teks)";
   } else if (text && size && color) {
     apiUrl = `https://cataas.com/cat/says/${text}?size=${size}&color=${color}`;
-    message = "Parameter diperlukan: text (teks), size (ukuran teks), dan color (warna teks)";
+    message = "Paramenter diperlukan: text (teks), size (ukuran teks), dan color (warna teks)";
   } else if (type) {
     apiUrl = `https://cataas.com/cat?type=${type}`;
-    message = "Parameter diperlukan: type (jenis gambar)";
+    message = "Paramenter diperlukan: type (jenis gambar)";
   } else if (width) {
     apiUrl = `https://cataas.com/cat?width=${width}`;
-    message = "Parameter diperlukan: width (lebar gambar)";
+    message = "Paramenter diperlukan: width (lebar gambar)";
   } else if (filter) {
     apiUrl = `https://cataas.com/cat/gif/says/${text}?filter=${filter}&size=${size}&color=${color}`;
-    message = "Parameter diperlukan: text (teks), filter (efek), size (ukuran teks), dan color (warna teks)";
+    message = "Paramenter diperlukan: text (teks), filter (efek), size (ukuran teks), dan color (warna teks)";
   } else {
     apiUrl = "https://cataas.com/cat";
-    message = "Parameter yang diterima: text, size, color, type, width, filter";
+    message = "Paramenter yang diterima: text, size, color, type, width, filter";
   }
   try {
     const response = await fetch(apiUrl);

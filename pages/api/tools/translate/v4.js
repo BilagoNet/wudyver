@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     if (!text) {
       return res.status(400).json({
         success: false,
-        message: "Parameter 'text' diperlukan."
+        message: "Paramenter 'text' diperlukan."
       });
     }
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${source}&tl=${target}&dt=t&q=${encodeURIComponent(text)}`;

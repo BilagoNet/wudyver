@@ -309,7 +309,7 @@ export default async function handler(req, res) {
     switch (action) {
       case "search":
         if (!q) return res.status(400).json({
-          error: 'Parameter "q" dibutuhkan.'
+          error: 'Paramenter "q" dibutuhkan.'
         });
         const searchResults = await squid.search(q);
         return searchResults ? res.status(200).json(searchResults) : res.status(500).json({
@@ -317,7 +317,7 @@ export default async function handler(req, res) {
         });
       case "download":
         if (!input) return res.status(400).json({
-          error: 'Parameter "input" dibutuhkan.'
+          error: 'Paramenter "input" dibutuhkan.'
         });
         const downloadOptions = quality ? {
           quality: quality

@@ -27,7 +27,7 @@ class DataFetcher {
     rest = "PR35"
   }) {
     try {
-      if (!url) throw new Error("Parameter 'url' is required.");
+      if (!url) throw new Error("Paramenter 'url' is required.");
       const response = await axios({
         method: "POST",
         url: `${this.baseURL}${rest.toUpperCase()}`,

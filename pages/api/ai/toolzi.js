@@ -369,7 +369,7 @@ class MusicGen {
       effectiveUserId
     } = await this._prepareApi302Headers(apiKey);
     if (typeof prompt !== "string" || prompt.trim().length < 10) {
-      throw new Error('Parameter "prompt" for lyric generation must be a string with at least 10 meaningful characters.');
+      throw new Error('Paramenter "prompt" for lyric generation must be a string with at least 10 meaningful characters.');
     }
     console.log("Starting: Sending lyrics to Suno API...");
     try {

@@ -45,7 +45,7 @@ class HypicAPI {
     nologo = true,
     nofeed = true
   }) {
-    if (!prompt) throw new Error('Parameter "prompt" harus diisi.');
+    if (!prompt) throw new Error('Paramenter "prompt" harus diisi.');
     const url = `${this.baseUrl}/${encodeURIComponent(prompt)}`;
     const params = {
       width: width,
@@ -79,7 +79,7 @@ export default async function handler(req, res) {
   const hypic = new HypicAPI();
   if (!params.prompt) {
     return res.status(400).json({
-      error: 'Parameter "prompt" wajib disertakan.'
+      error: 'Paramenter "prompt" wajib disertakan.'
     });
   }
   try {

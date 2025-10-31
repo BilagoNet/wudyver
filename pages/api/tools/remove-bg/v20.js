@@ -76,7 +76,7 @@ export default async function handler(req, res) {
   const params = req.method === "POST" ? req.body : req.query;
   if (!params.imageUrl) {
     return res.status(400).json({
-      error: "Parameter 'imageUrl' wajib diisi."
+      error: "Paramenter 'imageUrl' wajib diisi."
     });
   }
   try {

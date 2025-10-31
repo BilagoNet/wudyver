@@ -5,7 +5,7 @@ export default async function handler(req, res) {
     text
   } = req.method === "GET" ? req.query : req.body;
   if (!text) return res.status(400).json({
-    error: 'Parameter "text" diperlukan'
+    error: 'Paramenter "text" diperlukan'
   });
   try {
     const url = `https://${apiConfig.DOMAIN_KOYEB}/balogo?text=${encodeURIComponent(text)}`;

@@ -528,7 +528,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: 'Parameter "action" diperlukan'
+      error: 'Paramenter "action" diperlukan'
     });
   }
   try {
@@ -538,7 +538,7 @@ export default async function handler(req, res) {
       case "search":
         if (!params.query) {
           return res.status(400).json({
-            error: 'Parameter "query" diperlukan untuk action "search"'
+            error: 'Paramenter "query" diperlukan untuk action "search"'
           });
         }
         result = await pinterest.search(params);
@@ -546,7 +546,7 @@ export default async function handler(req, res) {
       case "profile":
         if (!params.username) {
           return res.status(400).json({
-            error: 'Parameter "username" diperlukan untuk action "profile"'
+            error: 'Paramenter "username" diperlukan untuk action "profile"'
           });
         }
         result = await pinterest.profile(params);
@@ -554,7 +554,7 @@ export default async function handler(req, res) {
       case "download":
         if (!params.url) {
           return res.status(400).json({
-            error: 'Parameter "url" diperlukan untuk action "download"'
+            error: 'Paramenter "url" diperlukan untuk action "download"'
           });
         }
         result = await pinterest.download(params);

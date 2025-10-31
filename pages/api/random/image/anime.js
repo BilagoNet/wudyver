@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!text || !availableFiles.includes(text)) {
     return res.status(400).json({
-      error: "Parameter 'text' salah atau tidak tersedia.",
+      error: "Paramenter 'text' salah atau tidak tersedia.",
       availableFiles: availableFiles,
       message: "Gunakan salah satu nama file dari daftar yang tersedia."
     });

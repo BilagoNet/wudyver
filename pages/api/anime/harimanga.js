@@ -104,21 +104,21 @@ export default async function handler(req, res) {
           data: latestResults
         });
       case "search":
-        if (!query) throw new Error("Parameter 'query' diperlukan untuk pencarian.");
+        if (!query) throw new Error("Paramenter 'query' diperlukan untuk pencarian.");
         const searchResults = await harimanga.search(query);
         return res.status(200).json({
           success: true,
           data: searchResults
         });
       case "detail":
-        if (!url) throw new Error("Parameter 'url' diperlukan untuk melihat detail.");
+        if (!url) throw new Error("Paramenter 'url' diperlukan untuk melihat detail.");
         const detailResults = await harimanga.detail(url);
         return res.status(200).json({
           success: true,
           data: detailResults
         });
       case "chapters":
-        if (!url) throw new Error("Parameter 'url' diperlukan untuk melihat daftar chapter.");
+        if (!url) throw new Error("Paramenter 'url' diperlukan untuk melihat daftar chapter.");
         const chaptersResults = await harimanga.chapters(url);
         return res.status(200).json({
           success: true,

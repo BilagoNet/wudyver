@@ -87,7 +87,7 @@ class SnapVNDownloader {
           filename: `${infoResult.user.username}-${Date.now()}.mp4`
         };
       }
-      throw new Error(`Parameter output tidak valid: '${output}'. Gunakan 'info' atau 'download'.`);
+      throw new Error(`Paramenter output tidak valid: '${output}'. Gunakan 'info' atau 'download'.`);
     } catch (error) {
       console.error(`Error in SnapVNDownloader: ${error.message}`);
       throw error;
@@ -166,7 +166,7 @@ export default async function handler(req, res) {
   if (!url) {
     return res.status(400).json({
       success: false,
-      error: "Parameter 'url' diperlukan."
+      error: "Paramenter 'url' diperlukan."
     });
   }
   const downloader = new SnapVNDownloader();

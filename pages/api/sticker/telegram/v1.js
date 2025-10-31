@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!query) {
     return res.status(400).json({
-      error: "Parameter query diperlukan."
+      error: "Paramenter query diperlukan."
     });
   }
   const stickers = await fetchStickerSet(query);
@@ -53,6 +53,6 @@ export default async function handler(req, res) {
     });
   }
   return res.status(400).json({
-    error: "Parameter 'all' atau 'sticker' diperlukan."
+    error: "Paramenter 'all' atau 'sticker' diperlukan."
   });
 }

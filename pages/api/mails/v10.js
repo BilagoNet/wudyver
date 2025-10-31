@@ -84,17 +84,17 @@ export default async function handler(req, res) {
       case "message":
         if (!params.email) {
           return res.status(400).json({
-            error: "Parameter 'email' hilang. Contoh: { email: 'ce7d174b-0652-458b-9bd8-c42ebf80eda2@emailhook.site' }"
+            error: "Paramenter 'email' hilang. Contoh: { email: 'ce7d174b-0652-458b-9bd8-c42ebf80eda2@emailhook.site' }"
           });
         }
         if (!params.id) {
           return res.status(400).json({
-            error: "Parameter 'id' hilang. Contoh: { email: 'ce7d174b-0652-458b-9bd8-c42ebf80eda2' }"
+            error: "Paramenter 'id' hilang. Contoh: { email: 'ce7d174b-0652-458b-9bd8-c42ebf80eda2' }"
           });
         }
         if (!params.update_tag) {
           return res.status(400).json({
-            error: "Parameter 'update_tag' hilang. Contoh: { email: 'ce7d174b-0652-458b-9bd8-c42ebf80eda2' }"
+            error: "Paramenter 'update_tag' hilang. Contoh: { email: 'ce7d174b-0652-458b-9bd8-c42ebf80eda2' }"
           });
         }
         try {

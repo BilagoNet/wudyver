@@ -443,7 +443,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new NanoBananaAPI();
@@ -456,7 +456,7 @@ export default async function handler(req, res) {
       case "generate":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' wajib diisi untuk action 'generate'."
+            error: "Paramenter 'prompt' wajib diisi untuk action 'generate'."
           });
         }
         response = await api.generate(params);
@@ -464,7 +464,7 @@ export default async function handler(req, res) {
       case "status":
         if (!params.key || !params.task_id) {
           return res.status(400).json({
-            error: "Parameter 'key' dan 'task_id' wajib diisi untuk action 'status'."
+            error: "Paramenter 'key' dan 'task_id' wajib diisi untuk action 'status'."
           });
         }
         response = await api.status(params);
@@ -472,7 +472,7 @@ export default async function handler(req, res) {
       case "checkin":
         if (!params.key) {
           return res.status(400).json({
-            error: "Parameter 'key' wajib diisi untuk action 'checkin'."
+            error: "Paramenter 'key' wajib diisi untuk action 'checkin'."
           });
         }
         response = await api.checkin(params);
@@ -480,7 +480,7 @@ export default async function handler(req, res) {
       case "del_user":
         if (!params.key) {
           return res.status(400).json({
-            error: "Parameter 'key' wajib diisi untuk action 'del_user'."
+            error: "Paramenter 'key' wajib diisi untuk action 'del_user'."
           });
         }
         response = await api.del_user(params);
@@ -491,7 +491,7 @@ export default async function handler(req, res) {
       case "del_key":
         if (!params.key) {
           return res.status(400).json({
-            error: "Parameter 'key' wajib diisi untuk action 'del_key'."
+            error: "Paramenter 'key' wajib diisi untuk action 'del_key'."
           });
         }
         response = await api.del_key(params);

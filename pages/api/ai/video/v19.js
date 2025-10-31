@@ -294,7 +294,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new VeoApi();
@@ -304,7 +304,7 @@ export default async function handler(req, res) {
       case "txt2img":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' wajib diisi untuk action 'txt2img'."
+            error: "Paramenter 'prompt' wajib diisi untuk action 'txt2img'."
           });
         }
         response = await api.txt2img(params);
@@ -312,7 +312,7 @@ export default async function handler(req, res) {
       case "txt2vid":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' wajib diisi untuk action 'txt2vid'."
+            error: "Paramenter 'prompt' wajib diisi untuk action 'txt2vid'."
           });
         }
         response = await api.txt2vid(params);
@@ -320,7 +320,7 @@ export default async function handler(req, res) {
       case "img2vid":
         if (!params.prompt || !params.imageUrl) {
           return res.status(400).json({
-            error: "Parameter 'prompt' dan 'imageUrl' wajib diisi untuk action 'img2vid'."
+            error: "Paramenter 'prompt' dan 'imageUrl' wajib diisi untuk action 'img2vid'."
           });
         }
         response = await api.img2vid(params);
@@ -328,7 +328,7 @@ export default async function handler(req, res) {
       case "status":
         if (!params.task_id) {
           return res.status(400).json({
-            error: "Parameter 'task_id' wajib diisi untuk action 'status'."
+            error: "Paramenter 'task_id' wajib diisi untuk action 'status'."
           });
         }
         response = await api.status(params);

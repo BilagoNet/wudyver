@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   const params = method === "GET" ? query : body;
   if (!params.type) {
     return res.status(400).json({
-      error: 'Parameter "type" is required.'
+      error: 'Paramenter "type" is required.'
     });
   }
   const validTypes = ["8ball", "cat", "hug", "kiss", "lizard", "neko", "pat", "smug", "woof", "gasm", "goose", "cuddle", "avatar", "slap", "gecg", "feed", "fox_girl", "meow", "wallpaper", "tickle", "spank", "waifu", "lewd", "ngif"];

@@ -124,7 +124,7 @@ export default async function handler(req, res) {
         });
       default:
         return res.status(400).json({
-          error: "Parameter 'query' atau 'url' diperlukan."
+          error: "Paramenter 'query' atau 'url' diperlukan."
         });
     }
   } catch (error) {

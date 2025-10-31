@@ -69,7 +69,7 @@ export default async function handler(req, res) {
     } = req.method === "GET" ? req.query : req.body;
     if (!data) {
       return res.status(400).json({
-        error: "Parameter 'data' is required."
+        error: "Paramenter 'data' is required."
       });
     }
     const qrImageBuffer = await qrCodeGenerator.generateQRCode(data, options);

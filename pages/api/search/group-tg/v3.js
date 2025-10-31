@@ -87,7 +87,7 @@ export default async function handler(req, res) {
   const params = req.method === "GET" ? req.query : req.body;
   if (!params.query) {
     return res.status(400).json({
-      error: "Parameter 'query' is required."
+      error: "Paramenter 'query' is required."
     });
   }
   const tgstatScraper = new TgstatScraper();

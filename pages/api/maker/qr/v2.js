@@ -84,7 +84,7 @@ class QRCodeGenerator {
     ...rest
   }) {
     if (!data) {
-      throw new Error("Parameter 'data' wajib disertakan.");
+      throw new Error("Paramenter 'data' wajib disertakan.");
     }
     const themeConfig = this.getThemeConfig(theme);
     const payload = {

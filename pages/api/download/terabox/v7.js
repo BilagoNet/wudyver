@@ -52,7 +52,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!url) {
     return res.status(400).json({
-      error: "Parameter `url` wajib disertakan"
+      error: "Paramenter `url` wajib disertakan"
     });
   }
   const hostIndex = parseInt(host, 10);

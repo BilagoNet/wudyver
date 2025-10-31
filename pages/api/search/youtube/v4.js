@@ -50,7 +50,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' is required"
+      error: "Paramenter 'action' is required"
     });
   }
   const ytService = new YouTubeService();
@@ -59,13 +59,13 @@ export default async function handler(req, res) {
     switch (action) {
       case "search":
         if (!query) return res.status(400).json({
-          error: "Parameter 'query' is required for search action"
+          error: "Paramenter 'query' is required for search action"
         });
         result = await ytService.search(query);
         break;
       case "detail":
         if (!url) return res.status(400).json({
-          error: "Parameter 'url' is required for detail action"
+          error: "Paramenter 'url' is required for detail action"
         });
         result = await ytService.detail(url);
         break;

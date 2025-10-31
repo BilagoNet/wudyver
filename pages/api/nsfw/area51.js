@@ -223,7 +223,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const scraper = new Area51Scraper();
@@ -235,13 +235,13 @@ export default async function handler(req, res) {
         break;
       case "search":
         if (!params.query) return res.status(400).json({
-          error: "Parameter 'query' wajib."
+          error: "Paramenter 'query' wajib."
         });
         result = await scraper.search(params);
         break;
       case "detail":
         if (!params.url) return res.status(400).json({
-          error: "Parameter 'url' wajib."
+          error: "Paramenter 'url' wajib."
         });
         result = await scraper.detail(params);
         break;

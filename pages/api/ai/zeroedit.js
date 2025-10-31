@@ -496,7 +496,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new ZeroeditAPI();
@@ -509,7 +509,7 @@ export default async function handler(req, res) {
       case "generate":
         if (!params.imageUrl) {
           return res.status(400).json({
-            error: "Parameter 'imageUrl' wajib diisi untuk action 'generate'."
+            error: "Paramenter 'imageUrl' wajib diisi untuk action 'generate'."
           });
         }
         response = await api.generate(params);
@@ -517,7 +517,7 @@ export default async function handler(req, res) {
       case "credit":
         if (!params.key) {
           return res.status(400).json({
-            error: "Parameter 'key' wajib diisi untuk action 'credit'."
+            error: "Paramenter 'key' wajib diisi untuk action 'credit'."
           });
         }
         response = await api.credit(params);
@@ -528,7 +528,7 @@ export default async function handler(req, res) {
       case "del_key":
         if (!params.key) {
           return res.status(400).json({
-            error: "Parameter 'key' wajib diisi untuk action 'del_key'."
+            error: "Paramenter 'key' wajib diisi untuk action 'del_key'."
           });
         }
         response = await api.del_key(params);

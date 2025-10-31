@@ -202,7 +202,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi. Pilihan: 'search', 'download'."
+      error: "Paramenter 'action' wajib diisi. Pilihan: 'search', 'download'."
     });
   }
   const scraper = new ChpicScraper();
@@ -212,7 +212,7 @@ export default async function handler(req, res) {
       case "search":
         if (!params.query) {
           return res.status(400).json({
-            error: "Parameter 'query' wajib diisi untuk action 'search'."
+            error: "Paramenter 'query' wajib diisi untuk action 'search'."
           });
         }
         response = await scraper.search(params);
@@ -220,7 +220,7 @@ export default async function handler(req, res) {
       case "download":
         if (!params.id) {
           return res.status(400).json({
-            error: "Parameter 'id' wajib diisi untuk action 'download'."
+            error: "Paramenter 'id' wajib diisi untuk action 'download'."
           });
         }
         response = await scraper.download(params);

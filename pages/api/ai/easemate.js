@@ -545,9 +545,9 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   const ai = new EaseMate();
   if (!action) {
-    console.error("⛔️ Parameter 'action' tidak ditemukan.");
+    console.error("⛔️ Paramenter 'action' tidak ditemukan.");
     return res.status(400).json({
-      error: "Parameter 'action' diperlukan."
+      error: "Paramenter 'action' diperlukan."
     });
   }
   try {
@@ -556,9 +556,9 @@ export default async function handler(req, res) {
       case "chat": {
         console.log("➡️ Menerima permintaan 'chat'.");
         if (!params.prompt) {
-          console.error("⛔️ Parameter 'prompt' harus ada untuk aksi 'chat'.");
+          console.error("⛔️ Paramenter 'prompt' harus ada untuk aksi 'chat'.");
           return res.status(400).json({
-            error: "Parameter 'prompt' harus ada untuk aksi 'chat'."
+            error: "Paramenter 'prompt' harus ada untuk aksi 'chat'."
           });
         }
         response = await ai.chat(params);
@@ -570,9 +570,9 @@ export default async function handler(req, res) {
       case "image": {
         console.log("➡️ Menerima permintaan 'image'.");
         if (!params.prompt) {
-          console.error("⛔️ Parameter 'prompt' harus ada untuk aksi 'image'.");
+          console.error("⛔️ Paramenter 'prompt' harus ada untuk aksi 'image'.");
           return res.status(400).json({
-            error: "Parameter 'prompt' harus ada untuk aksi 'image'."
+            error: "Paramenter 'prompt' harus ada untuk aksi 'image'."
           });
         }
         response = await ai.image(params);
@@ -582,9 +582,9 @@ export default async function handler(req, res) {
       case "image_status": {
         console.log("➡️ Menerima permintaan 'image_status'.");
         if (!params.task_id) {
-          console.error("⛔️ Parameter 'task_id' hilang.");
+          console.error("⛔️ Paramenter 'task_id' hilang.");
           return res.status(400).json({
-            error: "Parameter 'task_id' diperlukan untuk aksi 'image_status'."
+            error: "Paramenter 'task_id' diperlukan untuk aksi 'image_status'."
           });
         }
         response = await ai.image_status(params);
@@ -594,9 +594,9 @@ export default async function handler(req, res) {
       case "video": {
         console.log("➡️ Menerima permintaan 'video'.");
         if (!params.prompt) {
-          console.error("⛔️ Parameter 'prompt' harus ada untuk aksi 'video'.");
+          console.error("⛔️ Paramenter 'prompt' harus ada untuk aksi 'video'.");
           return res.status(400).json({
-            error: "Parameter 'prompt' harus ada untuk aksi 'video'."
+            error: "Paramenter 'prompt' harus ada untuk aksi 'video'."
           });
         }
         response = await ai.video(params);
@@ -606,9 +606,9 @@ export default async function handler(req, res) {
       case "video_status": {
         console.log("➡️ Menerima permintaan 'video_status'.");
         if (!params.task_id) {
-          console.error("⛔️ Parameter 'task_id' hilang.");
+          console.error("⛔️ Paramenter 'task_id' hilang.");
           return res.status(400).json({
-            error: "Parameter 'task_id' diperlukan untuk aksi 'video_status'."
+            error: "Paramenter 'task_id' diperlukan untuk aksi 'video_status'."
           });
         }
         response = await ai.video_status(params);

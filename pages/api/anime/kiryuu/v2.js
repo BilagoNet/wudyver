@@ -130,7 +130,7 @@ export default async function handler(req, res) {
           return res.status(200).json(await mangaService.Detail(url));
         } else {
           return res.status(400).json({
-            error: 'Parameter "url" is required for detail'
+            error: 'Paramenter "url" is required for detail'
           });
         }
       case "search":
@@ -138,7 +138,7 @@ export default async function handler(req, res) {
           return res.status(200).json(await mangaService.Search(query));
         } else {
           return res.status(400).json({
-            error: 'Parameter "query" is required for search'
+            error: 'Paramenter "query" is required for search'
           });
         }
       case "popular":
@@ -156,7 +156,7 @@ export default async function handler(req, res) {
           return res.status(200).send(buffer);
         } else {
           return res.status(400).json({
-            error: 'Parameter "url" is required for download'
+            error: 'Paramenter "url" is required for download'
           });
         }
       default:

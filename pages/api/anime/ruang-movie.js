@@ -201,7 +201,7 @@ export default async function handler(req, res) {
           return res.status(200).json(searchResult);
         } else {
           return res.status(400).json({
-            error: 'Parameter "query" wajib ada untuk aksi "search".'
+            error: 'Paramenter "query" wajib ada untuk aksi "search".'
           });
         }
       case "detail":
@@ -213,7 +213,7 @@ export default async function handler(req, res) {
           return res.status(200).json(detailResult);
         } else {
           return res.status(400).json({
-            error: 'Parameter "url" wajib ada untuk aksi "detail".'
+            error: 'Paramenter "url" wajib ada untuk aksi "detail".'
           });
         }
       case "download":
@@ -225,7 +225,7 @@ export default async function handler(req, res) {
           return res.status(200).json(downloadResult);
         } else {
           return res.status(400).json({
-            error: 'Parameter "url" wajib ada untuk aksi "download".'
+            error: 'Paramenter "url" wajib ada untuk aksi "download".'
           });
         }
       default:

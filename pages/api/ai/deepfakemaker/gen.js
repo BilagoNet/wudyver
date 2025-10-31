@@ -97,7 +97,7 @@ class DeepFakeAPI {
         sign: sign,
         secret_key: secretKeyEncrypted
       };
-      console.log("Parameter otentikasi berhasil dibuat.");
+      console.log("Paramenter otentikasi berhasil dibuat.");
       return authParams;
     } catch (error) {
       console.error("Gagal membuat parameter otentikasi:", error);

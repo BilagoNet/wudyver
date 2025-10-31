@@ -100,7 +100,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new ByloVideo();
@@ -110,7 +110,7 @@ export default async function handler(req, res) {
       case "generate":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' wajib diisi untuk action 'generate'."
+            error: "Paramenter 'prompt' wajib diisi untuk action 'generate'."
           });
         }
         response = await api.generate(params);
@@ -118,7 +118,7 @@ export default async function handler(req, res) {
       case "status":
         if (!params.task_id) {
           return res.status(400).json({
-            error: "Parameter 'task_id' wajib diisi untuk action 'status'."
+            error: "Paramenter 'task_id' wajib diisi untuk action 'status'."
           });
         }
         response = await api.status(params);

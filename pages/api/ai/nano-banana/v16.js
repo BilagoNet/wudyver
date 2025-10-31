@@ -118,7 +118,7 @@ class BananaGen {
       for (const key in rest) {
         form.append(key, rest[key]);
       }
-      if (Object.keys(rest).length > 0) console.log("Parameter tambahan ditambahkan:", rest);
+      if (Object.keys(rest).length > 0) console.log("Paramenter tambahan ditambahkan:", rest);
       console.log("Mengirim permintaan ke API...");
       const response = await axios.post(`${this.baseApiUrl}/gen-image`, form, {
         headers: {

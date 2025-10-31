@@ -79,7 +79,7 @@ export default async function handler(req, res) {
   const uptodown = new Uptodown();
   if (!action) {
     return res.status(400).json({
-      error: 'Parameter "action" wajib diisi (search atau download).'
+      error: 'Paramenter "action" wajib diisi (search atau download).'
     });
   }
   try {
@@ -87,13 +87,13 @@ export default async function handler(req, res) {
     switch (action) {
       case "search":
         if (!query) return res.status(400).json({
-          error: 'Parameter "query" wajib diisi untuk pencarian.'
+          error: 'Paramenter "query" wajib diisi untuk pencarian.'
         });
         result = await uptodown.search(query);
         break;
       case "detail":
         if (!slug) return res.status(400).json({
-          error: 'Parameter "slug" wajib diisi untuk unduhan.'
+          error: 'Paramenter "slug" wajib diisi untuk unduhan.'
         });
         result = await uptodown.download(slug);
         break;

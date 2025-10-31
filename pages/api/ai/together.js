@@ -151,14 +151,14 @@ class TogetherAPI {
     if (action === "generateImage" && !payload.prompt) {
       return {
         status: "error",
-        message: "Parameter 'prompt' wajib diisi untuk aksi 'generateImage'.",
+        message: "Paramenter 'prompt' wajib diisi untuk aksi 'generateImage'.",
         data: null
       };
     }
     if (action === "embeddings" && !payload.input) {
       return {
         status: "error",
-        message: "Parameter 'input' wajib diisi untuk aksi 'embeddings'.",
+        message: "Paramenter 'input' wajib diisi untuk aksi 'embeddings'.",
         data: null
       };
     }

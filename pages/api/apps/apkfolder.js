@@ -80,7 +80,7 @@ export default async function handler(req, res) {
   const apk = new SearchScraper();
   if (!action) {
     return res.status(400).json({
-      error: 'Parameter "action" wajib diisi (search atau detail).'
+      error: 'Paramenter "action" wajib diisi (search atau detail).'
     });
   }
   try {
@@ -88,13 +88,13 @@ export default async function handler(req, res) {
     switch (action) {
       case "search":
         if (!query) return res.status(400).json({
-          error: 'Parameter "query" wajib diisi untuk pencarian.'
+          error: 'Paramenter "query" wajib diisi untuk pencarian.'
         });
         result = await apk.search(query, limit);
         break;
       case "detail":
         if (!url) return res.status(400).json({
-          error: 'Parameter "url" wajib diisi untuk unduhan.'
+          error: 'Paramenter "url" wajib diisi untuk unduhan.'
         });
         result = await apk.detail(url);
         break;

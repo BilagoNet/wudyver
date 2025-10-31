@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!kitabId) {
     return res.status(400).json({
-      error: "Parameter kitabId wajib diisi"
+      error: "Paramenter kitabId wajib diisi"
     });
   }
   try {

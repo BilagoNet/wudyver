@@ -109,7 +109,7 @@ class JeevesAI {
           return this._parseStream(response.data);
         }
         case "conversation": {
-          if (!conversationId) throw new Error("Parameter 'conversationId' diperlukan untuk mode 'conversation'.");
+          if (!conversationId) throw new Error("Paramenter 'conversationId' diperlukan untuk mode 'conversation'.");
           console.log(`[INFO] Mode 'conversation': Mengambil percakapan ID ${conversationId}`);
           const response = await this.apiClient.get(`/generate/v4/conversation/${conversationId}`, authHeader);
           console.log(`[SUCCESS] Percakapan berhasil diambil.`);

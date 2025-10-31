@@ -299,7 +299,7 @@ export default async function handler(req, res) {
           return res.status(400).json({
             success: false,
             error: {
-              message: "Parameter 'input' is required for chat action."
+              message: "Paramenter 'input' is required for chat action."
             }
           });
         }
@@ -310,7 +310,7 @@ export default async function handler(req, res) {
           return res.status(400).json({
             success: false,
             error: {
-              message: "Parameter 'prompt' is required for image action."
+              message: "Paramenter 'prompt' is required for image action."
             }
           });
         }
@@ -321,7 +321,7 @@ export default async function handler(req, res) {
           return res.status(400).json({
             success: false,
             error: {
-              message: "Parameter 'query' is required for browse action."
+              message: "Paramenter 'query' is required for browse action."
             }
           });
         }
@@ -332,7 +332,7 @@ export default async function handler(req, res) {
           return res.status(400).json({
             success: false,
             error: {
-              message: "Parameter 'media' is required for pdf2text action."
+              message: "Paramenter 'media' is required for pdf2text action."
             }
           });
         }

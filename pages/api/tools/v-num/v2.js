@@ -157,7 +157,7 @@ class SmsScraper {
     if (!country) {
       return {
         success: false,
-        error: "Parameter 'country' diperlukan."
+        error: "Paramenter 'country' diperlukan."
       };
     }
     const result = await this.scrapers[site].create(country);
@@ -187,7 +187,7 @@ class SmsScraper {
     if (site === "smstome" && !url || site === "sms24" && !number) {
       return {
         success: false,
-        error: `Parameter '${site === "smstome" ? "url" : "number"}' diperlukan.`
+        error: `Paramenter '${site === "smstome" ? "url" : "number"}' diperlukan.`
       };
     }
     const result = await this.scrapers[site].message(params);
@@ -206,7 +206,7 @@ export default async function handler(req, res) {
   if (!site || !action) {
     return res.status(400).json({
       success: false,
-      error: "Parameter 'site' dan 'action' diperlukan.",
+      error: "Paramenter 'site' dan 'action' diperlukan.",
       allowed_sites: ["smstome", "sms24"],
       allowed_actions: ["country", "create", "message"]
     });

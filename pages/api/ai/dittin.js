@@ -726,7 +726,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new DittinAIAPI();
@@ -739,7 +739,7 @@ export default async function handler(req, res) {
       case "login":
         if (!params.email || !params.password) {
           return res.status(400).json({
-            error: "Parameter 'email' dan 'password' wajib diisi untuk action 'login'."
+            error: "Paramenter 'email' dan 'password' wajib diisi untuk action 'login'."
           });
         }
         response = await api.login(params);
@@ -750,7 +750,7 @@ export default async function handler(req, res) {
       case "image_gen":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' wajib diisi untuk action 'image_gen'."
+            error: "Paramenter 'prompt' wajib diisi untuk action 'image_gen'."
           });
         }
         response = await api.image_gen(params);
@@ -758,7 +758,7 @@ export default async function handler(req, res) {
       case "status":
         if (!params.taskId) {
           return res.status(400).json({
-            error: "Parameter 'taskId' wajib diisi untuk action 'status'."
+            error: "Paramenter 'taskId' wajib diisi untuk action 'status'."
           });
         }
         response = await api.status(params);
@@ -769,7 +769,7 @@ export default async function handler(req, res) {
       case "start_chat":
         if (!params.chatbotId) {
           return res.status(400).json({
-            error: "Parameter 'chatbotId' wajib diisi untuk action 'start_chat'."
+            error: "Paramenter 'chatbotId' wajib diisi untuk action 'start_chat'."
           });
         }
         response = await api.start_chat(params);
@@ -777,7 +777,7 @@ export default async function handler(req, res) {
       case "chat_image":
         if (!params.chatListId) {
           return res.status(400).json({
-            error: "Parameter 'chatListId' wajib diisi untuk action 'chat_image'."
+            error: "Paramenter 'chatListId' wajib diisi untuk action 'chat_image'."
           });
         }
         response = await api.chat_image(params);
@@ -785,7 +785,7 @@ export default async function handler(req, res) {
       case "send_message":
         if (!params.chatListId) {
           return res.status(400).json({
-            error: "Parameter 'chatListId' wajib diisi untuk action 'send_message'."
+            error: "Paramenter 'chatListId' wajib diisi untuk action 'send_message'."
           });
         }
         response = await api.send_message(params);
@@ -793,7 +793,7 @@ export default async function handler(req, res) {
       case "video_gen":
         if (!params.imageUrl) {
           return res.status(400).json({
-            error: "Parameter 'imageUrl' wajib diisi untuk action 'video_gen'."
+            error: "Paramenter 'imageUrl' wajib diisi untuk action 'video_gen'."
           });
         }
         response = await api.video_gen(params);
@@ -804,7 +804,7 @@ export default async function handler(req, res) {
       case "del_key":
         if (!params.key) {
           return res.status(400).json({
-            error: "Parameter 'key' wajib diisi untuk action 'del_key'."
+            error: "Paramenter 'key' wajib diisi untuk action 'del_key'."
           });
         }
         response = await api.del_key(params);

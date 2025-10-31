@@ -88,9 +88,9 @@ export default async function handler(req, res) {
     gender = "girl"
   } = req.method === "GET" ? req.query : req.body;
   if (!fatherImageUrl || !motherImageUrl) {
-    console.log("⛔ Parameter gambar tidak lengkap.");
+    console.log("⛔ Paramenter gambar tidak lengkap.");
     return res.status(400).json({
-      error: "Parameter ayah dan ibu harus diisi!"
+      error: "Paramenter ayah dan ibu harus diisi!"
     });
   }
   try {

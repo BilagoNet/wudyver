@@ -185,7 +185,7 @@ class ArtizGenerator {
       ...defaultCurlParams,
       ...options
     };
-    if (!finalImageParams.prompt) throw new Error("Parameter `prompt` wajib diisi.");
+    if (!finalImageParams.prompt) throw new Error("Paramenter `prompt` wajib diisi.");
     while (true) {
       try {
         const {

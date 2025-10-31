@@ -183,8 +183,8 @@ class ImageConverterMkII {
       }
       const successfulFiles = Object.keys(this.processedFiles);
       if (successfulFiles.length > 0) {
-        const orderParameter = successfulFiles.join(",");
-        const downloadEndpoint = `${this.orbitalAddress}all/${this.sessionId}/imagetopdf.pdf?order=${orderParameter}&rnd=${Math.random()}`;
+        const orderParamenter = successfulFiles.join(",");
+        const downloadEndpoint = `${this.orbitalAddress}all/${this.sessionId}/imagetopdf.pdf?order=${orderParamenter}&rnd=${Math.random()}`;
         this.log("Assemble", "Download Link", downloadEndpoint);
         return downloadEndpoint;
       } else {

@@ -5,7 +5,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!type) {
     return res.status(400).json({
-      error: 'Parameter "type" diperlukan'
+      error: 'Paramenter "type" diperlukan'
     });
   }
   const angkaArray = Array.from({
@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     }
   } else {
     return res.status(400).json({
-      error: 'Parameter "type" harus berupa angka'
+      error: 'Paramenter "type" harus berupa angka'
     });
   }
   try {

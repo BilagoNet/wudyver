@@ -178,21 +178,21 @@ export default async function handler(req, res) {
           data: latestResults
         });
       case "search":
-        if (!query) throw new Error("Parameter 'query' diperlukan untuk pencarian.");
+        if (!query) throw new Error("Paramenter 'query' diperlukan untuk pencarian.");
         const searchResults = await drakorkita.search(query);
         return res.status(200).json({
           success: true,
           data: searchResults
         });
       case "detail":
-        if (!url) throw new Error("Parameter 'url' diperlukan untuk melihat detail.");
+        if (!url) throw new Error("Paramenter 'url' diperlukan untuk melihat detail.");
         const detailResults = await drakorkita.detail(url);
         return res.status(200).json({
           success: true,
           data: detailResults
         });
       case "download":
-        if (!movie_id && !tag) throw new Error("Parameter 'movie_id dan tag' diperlukan untuk melihat.");
+        if (!movie_id && !tag) throw new Error("Paramenter 'movie_id dan tag' diperlukan untuk melihat.");
         const chaptersResults = await drakorkita.download(movie_id, tag);
         return res.status(200).json({
           success: true,

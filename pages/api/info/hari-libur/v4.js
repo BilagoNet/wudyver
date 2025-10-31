@@ -31,7 +31,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (year && isNaN(year)) {
     return res.status(400).json({
-      message: "Parameter tahun tidak valid."
+      message: "Paramenter tahun tidak valid."
     });
   }
   try {

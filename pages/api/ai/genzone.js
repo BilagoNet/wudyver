@@ -239,7 +239,7 @@ class GenZoneAPI {
       form.append("x-amz-meta-userid", sign.sign.xamzMetaUserid);
       form.append("x-amz-meta-bucket", sign.sign.xamzMetaBucket);
       form.append("x-amz-meta-filetype", sign.sign.xamzMetaFiletype);
-      form.append("x-amz-meta-parameters", sign.sign.xamzMetaParameters);
+      form.append("x-amz-meta-parameters", sign.sign.xamzMetaParamenters);
       form.append("x-amz-algorithm", sign.sign.xamzAlgorithm);
       form.append("x-amz-date", sign.sign.xamzDate);
       form.append("x-amz-signature", sign.sign.xamzSignature);
@@ -579,7 +579,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib ada."
+      error: "Paramenter 'action' wajib ada."
     });
   }
   const api = new GenZoneAPI();

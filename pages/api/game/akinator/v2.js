@@ -91,7 +91,7 @@ class Akinator {
     return await akiSession.create(sessionData);
   }
   async step(answer) {
-    if (!answer) throw new Error("Parameter answer diperlukan.");
+    if (!answer) throw new Error("Paramenter answer diperlukan.");
     await this.loadSession();
     const response = await this.proxyClient.post("/answer", {
       step: this.session.currentStep.toString(),
@@ -142,7 +142,7 @@ class Akinator {
     return this.session;
   }
   static async delete(sessionId) {
-    if (!sessionId) throw new Error("Parameter id diperlukan.");
+    if (!sessionId) throw new Error("Paramenter id diperlukan.");
     const session = await akiSession.findByIdAndDelete(sessionId);
     if (!session) throw new Error("Sesi tidak ditemukan.");
     return {
@@ -166,7 +166,7 @@ export default async function handler(req, res) {
       case "start":
         if (!lang) return res.status(400).json({
           success: false,
-          error: "Parameter lang diperlukan."
+          error: "Paramenter lang diperlukan."
         });
         data = await akinator.start(mode);
         break;

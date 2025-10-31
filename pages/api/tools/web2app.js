@@ -177,7 +177,7 @@ class WebToApp {
     });
     try {
       if (!task_id) {
-        throw new Error("Parameter task_id is required.");
+        throw new Error("Paramenter task_id is required.");
       }
       const updates = await this._request({
         url: `${this.config.api.base.maker}${this.config.api.endpoints.taskUpdates(task_id)}`,
@@ -226,7 +226,7 @@ export default async function handler(req, res) {
   } = req.method === "POST" ? req.body : req.query;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new WebToApp();
@@ -238,7 +238,7 @@ export default async function handler(req, res) {
         const missingParam = requiredParams.find(p => !params[p]);
         if (missingParam) {
           return res.status(400).json({
-            error: `Parameter '${missingParam}' wajib diisi untuk action 'generate'.`
+            error: `Paramenter '${missingParam}' wajib diisi untuk action 'generate'.`
           });
         }
         response = await api.generate(params);
@@ -246,7 +246,7 @@ export default async function handler(req, res) {
       case "status":
         if (!params.task_id) {
           return res.status(400).json({
-            error: "Parameter 'task_id' wajib diisi untuk action 'status'."
+            error: "Paramenter 'task_id' wajib diisi untuk action 'status'."
           });
         }
         response = await api.status(params);

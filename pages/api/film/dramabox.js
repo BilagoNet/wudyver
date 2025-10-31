@@ -176,7 +176,7 @@ export default async function handler(req, res) {
       case "search":
         if (!params.query) {
           return res.status(400).json({
-            error: "Parameter 'query' dibutuhkan untuk action 'search'"
+            error: "Paramenter 'query' dibutuhkan untuk action 'search'"
           });
         }
         result = await scraper.search(params);
@@ -184,7 +184,7 @@ export default async function handler(req, res) {
       case "detail":
         if (!params.url) {
           return res.status(400).json({
-            error: "Parameter 'url' dibutuhkan untuk action 'detail'"
+            error: "Paramenter 'url' dibutuhkan untuk action 'detail'"
           });
         }
         result = await scraper.detail(params);
@@ -192,7 +192,7 @@ export default async function handler(req, res) {
       case "download":
         if (!params.url) {
           return res.status(400).json({
-            error: "Parameter 'url' dibutuhkan untuk action 'download'"
+            error: "Paramenter 'url' dibutuhkan untuk action 'download'"
           });
         }
         result = await scraper.download(params);

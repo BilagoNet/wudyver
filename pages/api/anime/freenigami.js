@@ -95,7 +95,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: 'Parameter "action" wajib ada.',
+      error: 'Paramenter "action" wajib ada.',
       required: {
         action: "search | detail | download"
       }
@@ -108,7 +108,7 @@ export default async function handler(req, res) {
       case "search":
         if (!params.query) {
           return res.status(400).json({
-            error: `Parameter "query" wajib ada untuk aksi "${action}".`
+            error: `Paramenter "query" wajib ada untuk aksi "${action}".`
           });
         }
         result = await mangaApi.search(params);
@@ -116,7 +116,7 @@ export default async function handler(req, res) {
       case "detail":
         if (!params.mangaId) {
           return res.status(400).json({
-            error: `Parameter "mangaId" wajib ada untuk aksi "${action}".`
+            error: `Paramenter "mangaId" wajib ada untuk aksi "${action}".`
           });
         }
         result = await mangaApi.detail(params);
@@ -124,7 +124,7 @@ export default async function handler(req, res) {
       case "download":
         if (!params.mangaId || !params.chapterId) {
           return res.status(400).json({
-            error: `Parameter "mangaId" dan "chapterId" wajib ada untuk aksi "${action}".`
+            error: `Paramenter "mangaId" dan "chapterId" wajib ada untuk aksi "${action}".`
           });
         }
         result = await mangaApi.download(params);

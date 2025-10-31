@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     const prompt = method === "GET" ? queryPrompt : bodyPrompt;
     if (!prompt) {
       return res.status(400).json({
-        error: 'Parameter "prompt" is required.'
+        error: 'Paramenter "prompt" is required.'
       });
     }
     const {

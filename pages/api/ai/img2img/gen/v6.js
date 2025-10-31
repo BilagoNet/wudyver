@@ -167,7 +167,7 @@ export default async function handler(req, res) {
       case "create":
         if (!!params.imageUrl) {
           return res.status(400).json({
-            error: "Parameter 'imageUrl' diperlukan untuk action 'create'."
+            error: "Paramenter 'imageUrl' diperlukan untuk action 'create'."
           });
         }
         response = await icedit.create(params);
@@ -175,7 +175,7 @@ export default async function handler(req, res) {
       case "status":
         if (!params.task_id) {
           return res.status(400).json({
-            error: "Parameter 'task_id' diperlukan untuk action 'status'."
+            error: "Paramenter 'task_id' diperlukan untuk action 'status'."
           });
         }
         response = await icedit.status(params);

@@ -69,7 +69,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new MusicGenerator();
@@ -85,7 +85,7 @@ export default async function handler(req, res) {
       case "generate":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' wajib diisi."
+            error: "Paramenter 'prompt' wajib diisi."
           });
         }
         responseData = await api.generate(params);
@@ -93,7 +93,7 @@ export default async function handler(req, res) {
       case "status":
         if (!params.task_id) {
           return res.status(400).json({
-            error: "Parameter 'task_id' wajib diisi."
+            error: "Paramenter 'task_id' wajib diisi."
           });
         }
         responseData = await api.status(params);

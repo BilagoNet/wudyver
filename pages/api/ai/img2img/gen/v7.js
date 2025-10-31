@@ -123,7 +123,7 @@ class Imagable {
     await this.ensureAuth();
     this.log(`Memulai proses untuk aksi: ${action}`);
     if (!action) {
-      throw new Error("Parameter `action` diperlukan.");
+      throw new Error("Paramenter `action` diperlukan.");
     }
     let endpoint = "";
     let referer = "";
@@ -134,7 +134,7 @@ class Imagable {
     let imageBuffer;
     let contentType = "image/jpeg";
     if (["img2img", "figure", "ghibli"].includes(action)) {
-      if (!imageUrl) throw new Error(`Parameter 'imageUrl' diperlukan untuk aksi '${action}'.`);
+      if (!imageUrl) throw new Error(`Paramenter 'imageUrl' diperlukan untuk aksi '${action}'.`);
       if (Buffer.isBuffer(imageUrl)) {
         imageBuffer = imageUrl;
       } else if (typeof imageUrl === "string") {
@@ -231,7 +231,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' diperlukan. Pilihan: 'txt2img', 'img2img', 'figure', 'ghibli'."
+      error: "Paramenter 'action' diperlukan. Pilihan: 'txt2img', 'img2img', 'figure', 'ghibli'."
     });
   }
   const imagable = new Imagable();
@@ -241,7 +241,7 @@ export default async function handler(req, res) {
       case "txt2img":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' diperlukan untuk action 'txt2img'."
+            error: "Paramenter 'prompt' diperlukan untuk action 'txt2img'."
           });
         }
         response = await imagable.generate({
@@ -252,7 +252,7 @@ export default async function handler(req, res) {
       case "img2img":
         if (!params.prompt || !params.imageUrl) {
           return res.status(400).json({
-            error: "Parameter 'prompt' dan 'imageUrl' diperlukan untuk action 'img2img'."
+            error: "Paramenter 'prompt' dan 'imageUrl' diperlukan untuk action 'img2img'."
           });
         }
         response = await imagable.generate({
@@ -264,7 +264,7 @@ export default async function handler(req, res) {
       case "ghibli":
         if (!params.imageUrl) {
           return res.status(400).json({
-            error: `Parameter 'imageUrl' diperlukan untuk action '${action}'.`
+            error: `Paramenter 'imageUrl' diperlukan untuk action '${action}'.`
           });
         }
         response = await imagable.generate({

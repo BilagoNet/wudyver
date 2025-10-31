@@ -79,7 +79,7 @@ class HikaAPI {
               status: false,
               code: 400,
               type: options.type,
-              message: "Parameter wajib belum lengkap.",
+              message: "Paramenter wajib belum lengkap.",
               missing: missingFields
             };
           }
@@ -122,7 +122,7 @@ class HikaAPI {
               status: false,
               code: 400,
               type: options.type,
-              message: "Parameter wajib belum lengkap.",
+              message: "Paramenter wajib belum lengkap.",
               missing: missingFields
             };
           }
@@ -151,7 +151,7 @@ class HikaAPI {
               status: false,
               code: 400,
               type: options.type,
-              message: "Parameter wajib belum lengkap.",
+              message: "Paramenter wajib belum lengkap.",
               missing: missingFields
             };
           }

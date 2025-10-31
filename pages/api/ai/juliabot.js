@@ -29,7 +29,7 @@ class JuliaBotAPI {
     ...rest
   }) {
     if (!prompt) {
-      throw new Error('Parameter "prompt" diperlukan.');
+      throw new Error('Paramenter "prompt" diperlukan.');
     }
     if (powerful) {
       if (!this.validPowerfulTypes.includes(type)) {

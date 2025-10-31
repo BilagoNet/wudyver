@@ -107,7 +107,7 @@ class ImageGenerator {
   }) {
     console.log("\nMemulai proses 'generate'...");
     try {
-      if (!prompt) throw new Error("Parameter 'prompt' wajib diisi.");
+      if (!prompt) throw new Error("Paramenter 'prompt' wajib diisi.");
       const userId = await this._reg();
       const mode = imageUrl ? "Image-to-Image" : "Text-to-Image";
       console.log(`Mode yang digunakan: ${mode}`);

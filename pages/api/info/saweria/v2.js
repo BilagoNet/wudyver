@@ -341,7 +341,7 @@ export default async function handler(req, res) {
       if (!session) {
         return res.status(400).json({
           status: false,
-          msg: "Parameter 'session' diperlukan untuk tindakan ini."
+          msg: "Paramenter 'session' diperlukan untuk tindakan ini."
         });
       }
       try {
@@ -376,7 +376,7 @@ export default async function handler(req, res) {
         if (!email || !password) {
           return res.status(400).json({
             status: false,
-            msg: "Parameter 'email' dan 'password' diperlukan."
+            msg: "Paramenter 'email' dan 'password' diperlukan."
           });
         }
         const loginResponse = await saweria.login(email, password);
@@ -392,7 +392,7 @@ export default async function handler(req, res) {
         if (!amount) {
           return res.status(400).json({
             status: false,
-            msg: "Parameter 'amount' diperlukan."
+            msg: "Paramenter 'amount' diperlukan."
           });
         }
         const createQrResponse = await saweria.createQr(Number(amount), msg);
@@ -407,7 +407,7 @@ export default async function handler(req, res) {
         if (!id) {
           return res.status(400).json({
             status: false,
-            msg: "Parameter 'id' diperlukan."
+            msg: "Paramenter 'id' diperlukan."
           });
         }
         const cekPayResponse = await saweria.cekPay(id);
@@ -422,7 +422,7 @@ export default async function handler(req, res) {
         if (!reg_email) {
           return res.status(400).json({
             status: false,
-            msg: "Parameter 'email' diperlukan."
+            msg: "Paramenter 'email' diperlukan."
           });
         }
         const registerResponse = await saweria.register(reg_email);
@@ -443,7 +443,7 @@ export default async function handler(req, res) {
         if (!url) {
           return res.status(400).json({
             status: false,
-            msg: "Parameter 'url' diperlukan."
+            msg: "Paramenter 'url' diperlukan."
           });
         }
         const getSaweriaResponse = await saweria.getSaweria(url);
@@ -458,7 +458,7 @@ export default async function handler(req, res) {
         if (!new_token) {
           return res.status(400).json({
             status: false,
-            msg: "Parameter 'token' diperlukan."
+            msg: "Paramenter 'token' diperlukan."
           });
         }
         const setTokenResponse = await saweria.setToken(new_token);
@@ -470,7 +470,7 @@ export default async function handler(req, res) {
         if (!username) {
           return res.status(400).json({
             status: false,
-            msg: "Parameter 'username' diperlukan."
+            msg: "Paramenter 'username' diperlukan."
           });
         }
         const setSaweriaResponse = await saweria.setSaweria(username);
@@ -483,7 +483,7 @@ export default async function handler(req, res) {
         if (!payment_amount) {
           return res.status(400).json({
             status: false,
-            msg: "Parameter 'amount' diperlukan."
+            msg: "Paramenter 'amount' diperlukan."
           });
         }
         const createPaymentResponse = await saweria.createPayment(Number(payment_amount), message);
@@ -500,7 +500,7 @@ export default async function handler(req, res) {
         if (!payment_url || !pay_amount || !pay_message) {
           return res.status(400).json({
             status: false,
-            msg: "Parameter 'payment_url', 'pay_amount', dan 'pay_message' diperlukan."
+            msg: "Paramenter 'payment_url', 'pay_amount', dan 'pay_message' diperlukan."
           });
         }
         const sendPaymentResponse = await saweria.sendPayment(payment_url, Number(pay_amount), pay_message);
@@ -515,7 +515,7 @@ export default async function handler(req, res) {
         if (!transaction_id) {
           return res.status(400).json({
             status: false,
-            msg: "Parameter 'transaction_id' diperlukan."
+            msg: "Paramenter 'transaction_id' diperlukan."
           });
         }
         const statusResponse = await saweria.status(transaction_id);

@@ -462,7 +462,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new EasyMusicAPI();
@@ -474,19 +474,19 @@ export default async function handler(req, res) {
         break;
       case "generate":
         if (!params.prompt) return res.status(400).json({
-          error: "Parameter 'prompt' wajib diisi untuk action 'generate'."
+          error: "Paramenter 'prompt' wajib diisi untuk action 'generate'."
         });
         response = await api.generate(params);
         break;
       case "status":
         if (!params.key || !params.task_id) return res.status(400).json({
-          error: "Parameter 'key' dan 'task_id' wajib diisi untuk action 'status'."
+          error: "Paramenter 'key' dan 'task_id' wajib diisi untuk action 'status'."
         });
         response = await api.status(params);
         break;
       case "wait_complete":
         if (!params.key || !params.task_id) return res.status(400).json({
-          error: "Parameter 'key' dan 'task_id' wajib diisi untuk action 'wait_complete'."
+          error: "Paramenter 'key' dan 'task_id' wajib diisi untuk action 'wait_complete'."
         });
         response = await api.waitComplete(params);
         break;
@@ -495,13 +495,13 @@ export default async function handler(req, res) {
         break;
       case "del_key":
         if (!params.key) return res.status(400).json({
-          error: "Parameter 'key' wajib diisi untuk action 'del_key'."
+          error: "Paramenter 'key' wajib diisi untuk action 'del_key'."
         });
         response = await api.delKey(params.key);
         break;
       case "profile":
         if (!params.key) return res.status(400).json({
-          error: "Parameter 'key' wajib diisi untuk action 'profile'."
+          error: "Paramenter 'key' wajib diisi untuk action 'profile'."
         });
         response = await api.getProfile(params.key);
         break;

@@ -257,7 +257,7 @@ class UIUCChatClient {
       projectName: projectName,
       createdAt: createdAt,
       updatedAt: updatedAt,
-      linkParameters: {
+      linkParamenters: {
         guidedLearning: false,
         documentsOnly: false,
         systemPromptOnly: false

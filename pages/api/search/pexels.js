@@ -67,7 +67,7 @@ class AxiosClient {
     const missingParams = endpoint.params.filter(param => !rest[param] && !["query", "per_page"].includes(param));
     if (missingParams.length > 0) {
       throw new Error(JSON.stringify({
-        error: "MissingParameters",
+        error: "MissingParamenters",
         message: `Missing required parameters for ${selectedType}: ${missingParams.join(", ")}`
       }));
     }

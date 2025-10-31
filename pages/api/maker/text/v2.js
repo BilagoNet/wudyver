@@ -236,7 +236,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' is required."
+      error: "Paramenter 'action' is required."
     });
   }
   const textEffect = new TextEffectGenerator();
@@ -247,12 +247,12 @@ export default async function handler(req, res) {
       case "search":
         if (!params.query) {
           return res.status(400).json({
-            error: "Parameter 'query' is required for action 'search'."
+            error: "Paramenter 'query' is required for action 'search'."
           });
         }
         if (!params.type) {
           return res.status(400).json({
-            error: "Parameter 'type' is required for action 'search'."
+            error: "Paramenter 'type' is required for action 'search'."
           });
         }
         response = await textEffect.search({
@@ -263,7 +263,7 @@ export default async function handler(req, res) {
       case "generate":
         if (!params.url) {
           return res.status(400).json({
-            error: "Parameter 'url' is required for action 'generate'."
+            error: "Paramenter 'url' is required for action 'generate'."
           });
         }
         let textInput = [];

@@ -10,7 +10,7 @@ export default async function handler(req, res) {
       return res.status(400).json({
         success: false,
         response: 400,
-        message: "Parameter 'sites' diperlukan."
+        message: "Paramenter 'sites' diperlukan."
       });
     }
     try {

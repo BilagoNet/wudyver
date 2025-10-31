@@ -55,7 +55,7 @@ export default async function handler(req, res) {
     slug
   } = req.method === "GET" ? req.query : req.body;
   if (!news || !type) return res.status(400).json({
-    error: 'Parameter "news" dan "type" diperlukan'
+    error: 'Paramenter "news" dan "type" diperlukan'
   });
   try {
     const api = new NewsAPI(news, type, slug);

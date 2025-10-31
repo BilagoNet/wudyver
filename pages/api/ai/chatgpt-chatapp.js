@@ -143,7 +143,7 @@ class ChatAPI {
       } else if (messages && Array.isArray(messages) && messages.length > 0) {
         messagesToSend = messages;
       } else {
-        throw new Error("Parameter 'prompt' atau 'messages' harus diberikan.");
+        throw new Error("Paramenter 'prompt' atau 'messages' harus diberikan.");
       }
       const id = this.generateID({
         timestamp: timestamp,

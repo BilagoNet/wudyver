@@ -36,7 +36,7 @@ class Web2PDFConverter {
         "x-requested-with": "XMLHttpRequest"
       };
       const data = {
-        Parameters: [{
+        Paramenters: [{
           Name: "File",
           FileValue: {
             Name: "file.html",

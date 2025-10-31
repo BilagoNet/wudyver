@@ -55,7 +55,7 @@ class TelegramSticker {
     ...rest
   }) {
     if (!query) {
-      throw new Error("Parameter 'query' wajib diisi.");
+      throw new Error("Paramenter 'query' wajib diisi.");
     }
     try {
       console.log(`[Mulai] Pencarian stiker dengan query: "${query}"`);

@@ -29,7 +29,7 @@ class TeraboxDownloader {
   async download(link) {
     try {
       if (!link) {
-        throw new Error("Parameter 'link' tidak ditemukan di URL.");
+        throw new Error("Paramenter 'link' tidak ditemukan di URL.");
       }
       const encryptedLink = this.encryptLink(link);
       const data = {

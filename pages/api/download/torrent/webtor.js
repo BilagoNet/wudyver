@@ -117,7 +117,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!magnet || typeof magnet !== "string") {
     return res.status(400).json({
-      error: 'Parameter "magnet" diperlukan dan harus berupa string.'
+      error: 'Paramenter "magnet" diperlukan dan harus berupa string.'
     });
   }
   try {

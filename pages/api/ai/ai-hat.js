@@ -53,7 +53,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!question) {
     return res.status(400).json({
-      error: "Parameter 'question' is required"
+      error: "Paramenter 'question' is required"
     });
   }
   try {

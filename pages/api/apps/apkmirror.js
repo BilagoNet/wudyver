@@ -180,7 +180,7 @@ export default async function handler(req, res) {
   const apk = new ApkMirrorAPI();
   if (!action) {
     return res.status(400).json({
-      error: 'Parameter "action" wajib diisi (search, detail, atau download).'
+      error: 'Paramenter "action" wajib diisi (search, detail, atau download).'
     });
   }
   try {
@@ -189,7 +189,7 @@ export default async function handler(req, res) {
       case "search":
         if (!query) {
           return res.status(400).json({
-            error: 'Parameter "query" wajib diisi untuk pencarian.'
+            error: 'Paramenter "query" wajib diisi untuk pencarian.'
           });
         }
         result = await apk.search({
@@ -200,7 +200,7 @@ export default async function handler(req, res) {
       case "detail":
         if (!url) {
           return res.status(400).json({
-            error: 'Parameter "url" wajib diisi untuk detail.'
+            error: 'Paramenter "url" wajib diisi untuk detail.'
           });
         }
         result = await apk.detail({
@@ -211,7 +211,7 @@ export default async function handler(req, res) {
       case "download":
         if (!url) {
           return res.status(400).json({
-            error: 'Parameter "url" wajib diisi untuk unduhan.'
+            error: 'Paramenter "url" wajib diisi untuk unduhan.'
           });
         }
         result = await apk.download({

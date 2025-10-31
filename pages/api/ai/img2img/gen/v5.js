@@ -188,7 +188,7 @@ class NoteGPT {
   }) {
     console.log("🚀 Memulai generasi...");
     if (sub_type === undefined) {
-      throw new Error("Parameter 'sub_type' diperlukan.");
+      throw new Error("Paramenter 'sub_type' diperlukan.");
     }
     console.log(`ℹ️ Menggunakan sub_type: ${sub_type}`);
     const t = await this.getRemainingTimes(sub_type);

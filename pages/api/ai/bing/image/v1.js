@@ -34,7 +34,7 @@ class BingImageGenerator {
     output = "4",
     cookie = "15Saj6ishPr6tdYIlraA7JCe1UD_2un-nVF2S3NMV4nXEU1TqJjJBDbIc7hRe3disZ7rNHNnC7ty6Ac9l4iX0RThc0-XQI3Uz9lI4Xi307cYY8f_lKmzQfYDrPrCIwiwp3U0U1zZGnMuJSlJkUtKWI6f9jUMHgZVYpmPWIVrVZNbNQnYKOXLgQ1Vv7gvSsqK6t65wFvj3tpeB4q_miwpTdw"
   }) {
-    if (!prompt) throw new Error('Parameter "prompt" diperlukan');
+    if (!prompt) throw new Error('Paramenter "prompt" diperlukan');
     try {
       const headers = {
         ...this.defaultHeaders

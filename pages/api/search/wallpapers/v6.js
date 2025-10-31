@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!query) {
     return res.status(400).json({
-      error: "Parameter 'query' is required"
+      error: "Paramenter 'query' is required"
     });
   }
   try {

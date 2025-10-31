@@ -119,7 +119,7 @@ export default async function handler(req, res) {
       case "generate":
         if (!top || !bottom) {
           return res.status(400).json({
-            error: "Parameters 'top' dan 'bottom' diperlukan."
+            error: "Paramenters 'top' dan 'bottom' diperlukan."
           });
         }
         const fonts = await memeGen.getFonts();
@@ -138,7 +138,7 @@ export default async function handler(req, res) {
           memeImage = await memeGen.createImage(link, top, bottom, selectedFont);
         } else {
           return res.status(400).json({
-            error: "Parameter 'link' atau 'template' diperlukan."
+            error: "Paramenter 'link' atau 'template' diperlukan."
           });
         }
         if (!memeImage.url) {

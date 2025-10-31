@@ -111,7 +111,7 @@ class SoraVideo {
             isRequired: false,
             isSupport: 1
           }],
-          customParameters: [{
+          customParamenters: [{
             name: "video_type",
             label: "Type",
             type: "select",

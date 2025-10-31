@@ -6,7 +6,7 @@ class SynkScraper {
   }
   async search(query) {
     if (!query) {
-      throw new Error("Parameter 'query' tidak boleh kosong.");
+      throw new Error("Paramenter 'query' tidak boleh kosong.");
     }
     const url = `https://snyk.io/advisor/search?source=${this.source}&q=${query}`;
     try {
@@ -39,7 +39,7 @@ class SynkScraper {
   }
   async detail(url) {
     if (!url) {
-      throw new Error("Parameter 'url' tidak boleh kosong.");
+      throw new Error("Paramenter 'url' tidak boleh kosong.");
     }
     try {
       const {
@@ -124,14 +124,14 @@ export default async function handler(req, res) {
   try {
     if (action === "search") {
       if (!query) return res.status(400).json({
-        error: "Parameter 'query' diperlukan untuk pencarian."
+        error: "Paramenter 'query' diperlukan untuk pencarian."
       });
       const results = await scraper.search(query);
       return res.status(200).json(results);
     }
     if (action === "detail") {
       if (!url) return res.status(400).json({
-        error: "Parameter 'url' diperlukan untuk detail."
+        error: "Paramenter 'url' diperlukan untuk detail."
       });
       const details = await scraper.detail(url);
       return res.status(200).json(details);

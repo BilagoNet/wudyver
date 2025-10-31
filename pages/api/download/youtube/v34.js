@@ -444,13 +444,13 @@ class YouTubeDownloader {
       hostsToUse = downloadHosts;
       targetValue = url;
       if (!targetValue) {
-        throw new Error("Parameter url harus disediakan untuk aksi download.");
+        throw new Error("Paramenter url harus disediakan untuk aksi download.");
       }
     } else if (action === "search") {
       hostsToUse = searchHosts;
       targetValue = query;
       if (!targetValue) {
-        throw new Error("Parameter query harus disediakan untuk aksi search.");
+        throw new Error("Paramenter query harus disediakan untuk aksi search.");
       }
     } else {
       throw new Error('Aksi tidak valid. Gunakan "download" atau "search".');

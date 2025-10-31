@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     } = req.method === "GET" ? req.query : req.body;
     if (!textL || !textR) {
       return res.status(400).json({
-        error: 'Parameter "textL" dan "textR" diperlukan'
+        error: 'Paramenter "textL" dan "textR" diperlukan'
       });
     }
     const params = new URLSearchParams();

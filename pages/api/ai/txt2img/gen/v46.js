@@ -63,7 +63,7 @@ class MiragicImageGenerator {
     safeFilter = false
   }) {
     if (!prompt) {
-      throw new Error("Parameter 'prompt' wajib diisi.");
+      throw new Error("Paramenter 'prompt' wajib diisi.");
     }
     console.log(`Memulai proses generate dengan model: ${model}`);
     const headers = {

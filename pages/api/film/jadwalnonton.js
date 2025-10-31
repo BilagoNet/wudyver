@@ -56,7 +56,7 @@ class JadwalNonton {
       }
       if (location !== null && theater === null) {
         return {
-          message: "Parameter theater diperlukan untuk melihat daftar bioskop",
+          message: "Paramenter theater diperlukan untuk melihat daftar bioskop",
           usage: `await jn.search({ location: ${location}, theater: 1 })`,
           availableLocations: "Gunakan await jn.search({ location: 1 }) untuk melihat daftar lokasi"
         };
@@ -72,7 +72,7 @@ class JadwalNonton {
       }
       if (location !== null && theater !== null && detail === null) {
         return {
-          message: "Parameter detail diperlukan untuk melihat detail bioskop",
+          message: "Paramenter detail diperlukan untuk melihat detail bioskop",
           usage: `await jn.search({ location: ${location}, theater: ${theater}, detail: 1 })`,
           availableTheaters: `Gunakan await jn.search({ location: ${location}, theater: 1 }) untuk melihat daftar bioskop`
         };
@@ -196,7 +196,7 @@ class JadwalNonton {
         url = theater.startsWith("http") ? theater : `${this.baseUrl}${theater.startsWith("/") ? "" : "/"}${theater}`;
         theaterName = "Custom URL";
       } else {
-        throw new Error("Parameter theater tidak valid");
+        throw new Error("Paramenter theater tidak valid");
       }
       console.log(`Mengambil detail bioskop dari URL: ${url} (${theaterName})`);
       const response = await axios.get(url);

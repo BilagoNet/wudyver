@@ -48,7 +48,7 @@ Here are the search results:
       const response = await axios.post(this.baseURL, {
         searchTerm: prompt,
         promptTemplate: promptTemplate,
-        searchParameters: "{}",
+        searchParamenters: "{}",
         searchResultTemplate: '[{order}] "{snippet}"\nURL: {link}'
       }, {
         headers: this.headers

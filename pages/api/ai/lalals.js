@@ -176,7 +176,7 @@ class LalalsAPI {
     duration: audioDuration = 5
   }) {
     await this._ensureInitialized();
-    if (!audioUrl || !audioDuration) throw new Error("Parameter `audioUrl` dan `audioDuration` dibutuhkan.");
+    if (!audioUrl || !audioDuration) throw new Error("Paramenter `audioUrl` dan `audioDuration` dibutuhkan.");
     const voiceDetails = await this._getVoiceDetails(voiceSlug);
     const extension = new URL(audioUrl).pathname.split(".").pop() || "webm";
     const {

@@ -1,106 +1,103 @@
-import axios from "axios";
 import * as cheerio from "cheerio";
-class SfileDl {
-  constructor() {
-    this.cookies = "";
+import axios from "axios";
+class SfileDownloader {
+  constructor(axiosConfig = {}) {
     this.axiosInstance = axios.create({
-      headers: {
-        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        "accept-language": "id-ID,id;q=0.9",
-        "cache-control": "no-cache",
-        pragma: "no-cache",
-        priority: "u=0, i",
-        "sec-ch-ua": '"Chromium";v="131", "Not_A Brand";v="24", "Microsoft Edge Simulate";v="131", "Lemur";v="131"',
-        "sec-ch-ua-mobile": "?1",
-        "sec-ch-ua-platform": '"Android"',
-        "sec-fetch-dest": "document",
-        "sec-fetch-mode": "navigate",
-        "sec-fetch-site": "none",
-        "sec-fetch-user": "?1",
-        "upgrade-insecure-requests": "1",
-        "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
-      },
-      withCredentials: true
+      ...axiosConfig
     });
-    this.axiosInstance.interceptors.response.use(response => {
-      const setCookieHeader = response.headers["set-cookie"];
-      if (setCookieHeader) {
-        this.cookies = setCookieHeader.map(cookie => cookie.split(";")[0]).join("; ");
-        this.axiosInstance.defaults.headers.common["cookie"] = this.cookies;
-      }
-      return response;
-    }, error => {
-      console.error("Axios Interceptor Error:", error);
-      return Promise.reject(error);
-    });
+  }
+  createHeaders(referer) {
+    return {
+      "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+      "sec-ch-ua": '"Not/A)Brand";v="8", "Chromium";v="137", "Google Chrome";v="137"',
+      dnt: "1",
+      "sec-ch-ua-mobile": "?1",
+      "sec-ch-ua-platform": '"Android"',
+      "sec-fetch-site": "same-origin",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-dest": "empty",
+      Referer: referer,
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9"
+    };
+  }
+  extractCookies(headers) {
+    return headers["set-cookie"]?.map(cookie => cookie.split(";")[0]).join("; ") || "";
+  }
+  extractMetadata($) {
+    const clean = text => text?.replace(/^-+\s*/, "").trim() || "N/A";
+    const firstListText = $(".file-content .list").first().text().split(" - ");
+    const sizeText = $("#download").text().replace(/Download File/g, "").replace(/\(|\)/g, "").trim() || "N/A";
+    return {
+      file_name: $(".file-content img[alt]").attr("alt")?.trim() || "N/A",
+      tags: firstListText[0]?.trim() || "N/A",
+      file_type: firstListText[1]?.trim() || "N/A",
+      size_from_text: sizeText,
+      author_name: $(".file-content .list").eq(1).find("a").text().trim() || "N/A",
+      upload_date: clean($(".file-content .list").eq(2).text().replace("Uploaded:", "")),
+      download_count: clean($(".file-content .list").eq(3).text().replace("Downloads:", ""))
+    };
   }
   async download({
     url,
-    output = "url"
+    output = "json"
   }) {
+    if (!url?.startsWith("http")) throw new Error("URL tidak valid.");
     try {
-      let response = await this.axiosInstance.get(url);
-      let $ = cheerio.load(response.data);
-      let dlLink = $("a.w3-button.w3-blue.w3-round#download").attr("href");
-      if (!dlLink) {
-        console.log("No download link found for URL:", url);
-        return null;
-      }
-      let [name, type] = [$(".file-content .intro").text().trim(), $(".file-content .list").first().text().split(" - ")[1]];
-      let [uploader, date, downloads] = [$(".file-content .list").eq(1).find("a").text(), $(".file-content .list").eq(2).text().replace("Uploaded: ", "").trim(), $(".file-content .list").eq(3).text().replace("Downloads: ", "").trim()];
-      while (true) {
-        try {
-          response = await this.axiosInstance.get(dlLink);
-          const finalLink = (response.data.match(/<script>(.*?)<\/script>/s)?.[1].match(/var sf = "(.*?)"/)?.[1] || "").replace(/\\/g, "");
-          if (finalLink) {
-            let meta = await this.getFileMetadata(finalLink);
-            let dlLinkBase64 = null;
-            if (output === "base64") {
-              try {
-                const contentResponse = await this.axiosInstance.get(finalLink, {
-                  responseType: "arraybuffer"
-                });
-                dlLinkBase64 = Buffer.from(contentResponse.data).toString("base64");
-              } catch (contentError) {
-                console.error("Error fetching or encoding content to Base64 from finalLink:", finalLink, contentError);
-              }
-            }
-            return {
-              name: name,
-              type: type,
-              uploader: uploader,
-              date: date,
-              downloads: downloads,
-              dlLink: finalLink,
-              dlLinkBase64: dlLinkBase64,
-              ...meta
-            };
-          }
-          console.log("No final link found after retry, retrying in 2 seconds...");
-          await new Promise(resolve => setTimeout(resolve, 2e3));
-        } catch (innerError) {
-          console.error("Error during inner download loop for dlLink:", dlLink, innerError);
-          await new Promise(resolve => setTimeout(resolve, 2e3));
-        }
+      let headers = this.createHeaders(url);
+      const initial = await this.axiosInstance.get(url, {
+        headers: headers
+      });
+      if (initial.status >= 400) throw new Error(`HTTP ${initial.status}`);
+      const cookies = this.extractCookies(initial.headers);
+      if (cookies) headers.Cookie = cookies;
+      let $ = cheerio.load(initial.data);
+      const pageMetadata = this.extractMetadata($);
+      const downloadUrl = $("#download").attr("href");
+      if (!downloadUrl) throw new Error("Link download tidak ditemukan");
+      headers.Referer = url;
+      const process = await this.axiosInstance.get(downloadUrl, {
+        headers: headers
+      });
+      $ = cheerio.load(process.data);
+      const scripts = $("script").map((_, el) => $(el).html()).get().join("\n");
+      const urlMatch = scripts.match(/https:\\\/\\\/download\d+\.sfile\.mobi\\\/downloadfile\\\/[^'"]+/gi);
+      if (!urlMatch?.length) throw new Error("Link final tidak ditemukan");
+      const finalUrl = urlMatch[0].replace(/\\\//g, "/");
+      if (output === "buffer") {
+        const response = await this.axiosInstance.get(finalUrl, {
+          headers: headers,
+          responseType: "arraybuffer"
+        });
+        return {
+          metadata: {
+            ...pageMetadata,
+            size_bytes: response.data.length,
+            size_formatted: `${(response.data.length / 1024 / 1024).toFixed(2)} MB`,
+            mime_type: response.headers["content-type"] || "application/octet-stream"
+          },
+          download: response.data
+        };
+      } else {
+        const headResponse = await this.axiosInstance.head(finalUrl, {
+          headers: headers
+        });
+        const contentLength = headResponse.headers["content-length"];
+        const fileMeta = {
+          size_bytes: contentLength ? parseInt(contentLength) : "Unknown",
+          size_formatted: contentLength ? `${(parseInt(contentLength) / 1024 / 1024).toFixed(2)} MB` : "Unknown",
+          mime_type: headResponse.headers["content-type"] || "Unknown"
+        };
+        return {
+          metadata: {
+            ...pageMetadata,
+            ...fileMeta
+          },
+          download: finalUrl
+        };
       }
     } catch (error) {
-      console.error("Error during initial download or cheerio parsing for URL:", url, error);
-      return null;
-    }
-  }
-  async getFileMetadata(link) {
-    try {
-      const response = await this.axiosInstance.head(link);
-      return {
-        size: response.headers["content-length"] ? `${(response.headers["content-length"] / 1024 / 1024).toFixed(2)} MB` : "Unknown",
-        mime: response.headers["content-type"] || "Unknown"
-      };
-    } catch (error) {
-      console.error("Error getting file metadata for link:", link, error);
-      return {
-        size: "Unknown",
-        mime: "Unknown"
-      };
+      throw new Error(`Download gagal: ${error.message}`);
     }
   }
 }
@@ -108,16 +105,21 @@ export default async function handler(req, res) {
   const params = req.method === "GET" ? req.query : req.body;
   if (!params.url) {
     return res.status(400).json({
-      error: "Url is required"
+      error: "Paramenter 'url' dibutuhkan."
     });
   }
-  const sfile = new SfileDl();
   try {
-    const data = await sfile.download(params);
-    return res.status(200).json(data);
+    const api = new SfileDownloader();
+    const response = await api.download(params);
+    if (params.output === "buffer" && response.download) {
+      res.setHeader("Content-Type", response.metadata.mime_type);
+      res.setHeader("Content-Disposition", `attachment; filename="${response.metadata.file_name || "downloaded-file"}"`);
+      return res.send(response.download);
+    }
+    return res.status(200).json(response);
   } catch (error) {
     res.status(500).json({
-      error: "Error during request"
+      error: error.message || "Terjadi kesalahan internal pada server."
     });
   }
 }

@@ -261,7 +261,7 @@ export default async function handler(req, res) {
   if (!action) {
     return res.status(400).json({
       success: false,
-      error: "Parameter 'action' diperlukan.",
+      error: "Paramenter 'action' diperlukan.",
       allowed_actions: ["create", "message"]
     });
   }
@@ -273,7 +273,7 @@ export default async function handler(req, res) {
         if (!params.country) {
           return res.status(400).json({
             success: false,
-            error: `Parameter 'country' diperlukan untuk aksi '${action}'.`
+            error: `Paramenter 'country' diperlukan untuk aksi '${action}'.`
           });
         }
         result = await luban[action](params);
@@ -282,7 +282,7 @@ export default async function handler(req, res) {
         if (!params.country || !params.number) {
           return res.status(400).json({
             success: false,
-            error: `Parameter 'country' dan 'number' diperlukan untuk aksi '${action}'.`
+            error: `Paramenter 'country' dan 'number' diperlukan untuk aksi '${action}'.`
           });
         }
         result = await luban[action](params);

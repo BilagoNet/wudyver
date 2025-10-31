@@ -208,7 +208,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new IndeedScraper();
@@ -218,7 +218,7 @@ export default async function handler(req, res) {
       case "search":
         if (!params.query) {
           return res.status(400).json({
-            error: "Parameter 'query' wajib diisi untuk action 'search'."
+            error: "Paramenter 'query' wajib diisi untuk action 'search'."
           });
         }
         response = await api.search(params);
@@ -226,7 +226,7 @@ export default async function handler(req, res) {
       case "detail":
         if (!params.id) {
           return res.status(400).json({
-            error: "Parameter 'id' wajib diisi untuk action 'detail'."
+            error: "Paramenter 'id' wajib diisi untuk action 'detail'."
           });
         }
         response = await api.detail(params);

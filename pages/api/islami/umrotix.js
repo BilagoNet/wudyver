@@ -53,7 +53,7 @@ export default async function handler(req, res) {
     if (type === "alquran") {
       if (!surah) {
         return res.status(400).json({
-          error: "Parameter 'surah' wajib ada."
+          error: "Paramenter 'surah' wajib ada."
         });
       }
       const data = await umrotix.alquran(surah, ayat ? parseInt(ayat) : null);

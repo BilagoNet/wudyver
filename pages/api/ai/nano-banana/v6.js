@@ -157,7 +157,7 @@ class NanoBanana {
     num_images = 1,
     ...rest
   }) {
-    if (!prompt) throw new Error('Parameter "prompt" diperlukan.');
+    if (!prompt) throw new Error('Paramenter "prompt" diperlukan.');
     await this._authenticate();
     const type = imageUrl ? "image-to-image" : "text-to-image";
     console.log(`🚀 Memulai tugas: ${type} (${num_images} gambar)`);

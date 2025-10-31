@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     edition = "quran-simple"
   } = req.method === "GET" ? req.query : req.body;
   if (!ayah && !surah) return res.status(400).json({
-    error: "Parameter 'ayah' atau 'surah' wajib diisi."
+    error: "Paramenter 'ayah' atau 'surah' wajib diisi."
   });
   try {
     if (ayah) {

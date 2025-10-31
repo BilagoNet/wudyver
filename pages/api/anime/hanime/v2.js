@@ -292,7 +292,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new HanimeAPI("https://hani.nyt92.eu.org", params.token);
@@ -303,7 +303,7 @@ export default async function handler(req, res) {
       case "login_summary":
       case "get_coins":
         if (!params.email || !params.password) return res.status(400).json({
-          error: "Parameter 'email' dan 'password' wajib diisi."
+          error: "Paramenter 'email' dan 'password' wajib diisi."
         });
         if (action === "login") response = await api.login(params.email, params.password);
         if (action === "login_summary") response = await api.loginSummary(params.email, params.password);
@@ -312,19 +312,19 @@ export default async function handler(req, res) {
       case "get_info":
       case "get_video":
         if (!params.id) return res.status(400).json({
-          error: "Parameter 'id' wajib diisi."
+          error: "Paramenter 'id' wajib diisi."
         });
         response = action === "get_info" ? await api.getInfo(params.id) : await api.getVideo(params.id);
         break;
       case "get_comments":
         if (!params.video_id) return res.status(400).json({
-          error: "Parameter 'video_id' wajib diisi."
+          error: "Paramenter 'video_id' wajib diisi."
         });
         response = await api.getComments(params.video_id);
         break;
       case "get_comment_replies":
         if (!params.reply_id) return res.status(400).json({
-          error: "Parameter 'reply_id' wajib diisi."
+          error: "Paramenter 'reply_id' wajib diisi."
         });
         response = await api.getCommentReplies(params.reply_id);
         break;
@@ -342,7 +342,7 @@ export default async function handler(req, res) {
         break;
       case "search_by_get":
         if (!params.q) return res.status(400).json({
-          error: "Parameter 'q' (query) wajib diisi."
+          error: "Paramenter 'q' (query) wajib diisi."
         });
         response = await api.searchByGet(params);
         break;
@@ -351,7 +351,7 @@ export default async function handler(req, res) {
         break;
       case "browse_by_tag":
         if (!params.type || !params.tag || !params.page) return res.status(400).json({
-          error: "Parameter 'type', 'tag', dan 'page' wajib diisi."
+          error: "Paramenter 'type', 'tag', dan 'page' wajib diisi."
         });
         response = await api.browseByTag(params.type, params.tag, params.page);
         break;
@@ -363,7 +363,7 @@ export default async function handler(req, res) {
         break;
       case "get_user":
         if (!params.channel_id) return res.status(400).json({
-          error: "Parameter 'channel_id' wajib diisi."
+          error: "Paramenter 'channel_id' wajib diisi."
         });
         response = await api.getUser(params.channel_id);
         break;

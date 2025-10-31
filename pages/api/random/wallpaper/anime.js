@@ -19,43 +19,43 @@ export default async function handler(req, res) {
     if (source === "random" && !resolution) {
       return res.status(400).json({
         success: false,
-        error: "Parameter 'resolution' diperlukan untuk source 'random'."
+        error: "Paramenter 'resolution' diperlukan untuk source 'random'."
       });
     }
     if (source === "wallhaven" && !query) {
       return res.status(400).json({
         success: false,
-        error: "Parameter 'query' diperlukan untuk source 'wallhaven'."
+        error: "Paramenter 'query' diperlukan untuk source 'wallhaven'."
       });
     }
     if (source === "wallpapers" && !query) {
       return res.status(400).json({
         success: false,
-        error: "Parameter 'query' diperlukan untuk source 'wallpapers'."
+        error: "Paramenter 'query' diperlukan untuk source 'wallpapers'."
       });
     }
     if (source === "zerochan" && !query) {
       return res.status(400).json({
         success: false,
-        error: "Parameter 'query' diperlukan untuk source 'zerochan'."
+        error: "Paramenter 'query' diperlukan untuk source 'zerochan'."
       });
     }
     if (source === "live2d" && !live2d) {
       return res.status(400).json({
         success: false,
-        error: "Parameter 'live2d' diperlukan untuk source 'live2d'."
+        error: "Paramenter 'live2d' diperlukan untuk source 'live2d'."
       });
     }
     if (source === "hoyolab" && (!game || !postType)) {
       return res.status(400).json({
         success: false,
-        error: "Parameter 'game' dan 'postType' diperlukan untuk source 'hoyolab'."
+        error: "Paramenter 'game' dan 'postType' diperlukan untuk source 'hoyolab'."
       });
     }
     if (source === "pinterest" && !query) {
       return res.status(400).json({
         success: false,
-        error: "Parameter 'query' diperlukan untuk source 'pinterest'."
+        error: "Paramenter 'query' diperlukan untuk source 'pinterest'."
       });
     }
     const result = source === "random" ? await wall.random({

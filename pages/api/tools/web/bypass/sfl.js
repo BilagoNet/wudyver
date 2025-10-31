@@ -191,7 +191,7 @@ class LinkBypasser {
       const urlObj = new URL(fullUrl);
       const encodedU = urlObj.searchParams.get("u");
       if (!encodedU) {
-        throw new Error('Parameter "u" not found in URL.');
+        throw new Error('Paramenter "u" not found in URL.');
       }
       return atob(decodeURIComponent(encodedU));
     } catch (error) {

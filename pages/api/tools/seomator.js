@@ -121,7 +121,7 @@ class SeoScraper {
     ...rest
   } = {}) {
     if (!site) {
-      throw new Error('Parameter "url" (site) is required');
+      throw new Error('Paramenter "url" (site) is required');
     }
     const listForOutput = await this.init(site);
     id = id?.trim() || "";

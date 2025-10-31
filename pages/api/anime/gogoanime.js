@@ -7,7 +7,7 @@ class Gogoanime {
     this.base_url = base_url || "https://gogoanime.fi/";
   }
   async getFromLink(link) {
-    if (!link) throw new Error("Missing Parameter: link is not provided.");
+    if (!link) throw new Error("Missing Paramenter: link is not provided.");
     let htmlContent = await axios({
       url: link
     });
@@ -37,7 +37,7 @@ class Gogoanime {
   async search(name, {
     page = "1"
   } = {}) {
-    if (!name) throw new Error("Missing Parameter: anime name is not provided.");
+    if (!name) throw new Error("Missing Paramenter: anime name is not provided.");
     const BaseURL = this.base_url;
     const htmlContent = await axios({
       url: `${BaseURL}/search.html?keyword=${encodeURIComponent(name)}&page=${page}`
@@ -57,13 +57,13 @@ class Gogoanime {
     return searchResults;
   }
   async getEpisodes(name, episode) {
-    if (!name) throw new Error("Missing Parameters: anime name is not provided.");
-    if (!episode) throw new Error("Missing Parameters: anime episode number is not provided");
+    if (!name) throw new Error("Missing Paramenters: anime name is not provided.");
+    if (!episode) throw new Error("Missing Paramenters: anime episode number is not provided");
     const Episode = await this.getFromLink(`${this.base_url}/${name}-episode-${episode}`).catch(err => {});
     return Episode ? Episode : {};
   }
   async fetchAnime(link) {
-    if (!link) throw new Error("Missing Parameter: anime link is not provided.");
+    if (!link) throw new Error("Missing Paramenter: anime link is not provided.");
     const htmlContent = await axios({
       url: link
     });

@@ -350,7 +350,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new SoulscansScraper();
@@ -360,7 +360,7 @@ export default async function handler(req, res) {
       case "search":
         if (!params.query) {
           return res.status(400).json({
-            error: "Parameter 'query' wajib diisi untuk action 'search'."
+            error: "Paramenter 'query' wajib diisi untuk action 'search'."
           });
         }
         response = await api.search(params);
@@ -368,7 +368,7 @@ export default async function handler(req, res) {
       case "detail":
         if (!params.url) {
           return res.status(400).json({
-            error: "Parameter 'url' wajib diisi untuk action 'detail'."
+            error: "Paramenter 'url' wajib diisi untuk action 'detail'."
           });
         }
         response = await api.detail(params);
@@ -376,7 +376,7 @@ export default async function handler(req, res) {
       case "download":
         if (!params.url) {
           return res.status(400).json({
-            error: "Parameter 'url' wajib diisi untuk action 'download'."
+            error: "Paramenter 'url' wajib diisi untuk action 'download'."
           });
         }
         response = await api.download(params);

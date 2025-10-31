@@ -157,7 +157,7 @@ class SiliconFlow {
     imageUrl,
     ...rest
   }) {
-    if (!prompt) throw new Error('Parameter "prompt" wajib diisi.');
+    if (!prompt) throw new Error('Paramenter "prompt" wajib diisi.');
     let imageData = imageUrl;
     if (imageUrl && imageUrl.startsWith("http")) {
       imageData = await this._url_to_b64(imageUrl);
@@ -176,7 +176,7 @@ class SiliconFlow {
     imageUrl,
     ...rest
   }) {
-    if (!prompt) throw new Error('Parameter "prompt" wajib diisi.');
+    if (!prompt) throw new Error('Paramenter "prompt" wajib diisi.');
     let imageData = imageUrl;
     if (imageUrl && imageUrl.startsWith("http")) {
       imageData = await this._url_to_b64(imageUrl);
@@ -194,7 +194,7 @@ class SiliconFlow {
     model,
     ...rest
   }) {
-    if (!input) throw new Error('Parameter "input" wajib diisi.');
+    if (!input) throw new Error('Paramenter "input" wajib diisi.');
     const data = {
       model: model || "fnlp/MOSS-TTSD-v0.5",
       input: input,
@@ -210,7 +210,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const sf = new SiliconFlow();
@@ -223,7 +223,7 @@ export default async function handler(req, res) {
       case "chat":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' wajib diisi untuk action 'image'."
+            error: "Paramenter 'prompt' wajib diisi untuk action 'image'."
           });
         }
         response = await sf.chat(params);
@@ -231,7 +231,7 @@ export default async function handler(req, res) {
       case "image":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' wajib diisi untuk action 'image'."
+            error: "Paramenter 'prompt' wajib diisi untuk action 'image'."
           });
         }
         response = await sf.image(params);
@@ -239,7 +239,7 @@ export default async function handler(req, res) {
       case "video":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' wajib diisi untuk action 'video'."
+            error: "Paramenter 'prompt' wajib diisi untuk action 'video'."
           });
         }
         response = await sf.video(params);
@@ -247,7 +247,7 @@ export default async function handler(req, res) {
       case "audio":
         if (!params.input) {
           return res.status(400).json({
-            error: "Parameter 'input' wajib diisi untuk action 'audio'."
+            error: "Paramenter 'input' wajib diisi untuk action 'audio'."
           });
         }
         response = await sf.audio(params);

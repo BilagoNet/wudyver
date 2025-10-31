@@ -58,7 +58,7 @@ export default async function handler(req, res) {
     if (!type) {
       return res.status(400).json({
         success: false,
-        message: "Parameter 'type' dibutuhkan ('search' atau 'slug')."
+        message: "Paramenter 'type' dibutuhkan ('search' atau 'slug')."
       });
     }
     switch (type) {
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
         if (!searchQuery) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'query' dibutuhkan untuk pencarian."
+            message: "Paramenter 'query' dibutuhkan untuk pencarian."
           });
         }
         const searchResult = await stickerCloud.search(searchQuery, page || 1);
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
         if (!slug) {
           return res.status(400).json({
             success: false,
-            message: "Parameter 'slug' dibutuhkan untuk mengambil pack."
+            message: "Paramenter 'slug' dibutuhkan untuk mengambil pack."
           });
         }
         const packResult = await stickerCloud.pack(slug);

@@ -25,7 +25,7 @@ class JinaAI {
     code
   }) {
     try {
-      if (!lang || !code) throw new Error("Parameter lang dan code diperlukan");
+      if (!lang || !code) throw new Error("Paramenter lang dan code diperlukan");
       const response = await axios.post(this.url, {
         parameters: {
           lang: lang,

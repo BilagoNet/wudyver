@@ -172,7 +172,7 @@ export default async function handler(req, res) {
   const ai = new MultiAI();
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' diperlukan"
+      error: "Paramenter 'action' diperlukan"
     });
   }
   switch (action) {
@@ -190,7 +190,7 @@ export default async function handler(req, res) {
     case "create":
       if (!params.prompt) {
         return res.status(400).json({
-          error: "Parameter 'prompt' diperlukan"
+          error: "Paramenter 'prompt' diperlukan"
         });
       }
       try {

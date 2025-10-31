@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!id) {
     return res.status(400).json({
-      error: "Parameter 'id', 'top', dan 'bottom' wajib ada."
+      error: "Paramenter 'id', 'top', dan 'bottom' wajib ada."
     });
   }
   const index = memeList.indexOf(id);

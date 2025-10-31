@@ -24,7 +24,7 @@ class SnapinsAPI {
     url
   }) {
     if (!url) {
-      throw new Error("Parameter 'url' wajib disertakan.");
+      throw new Error("Paramenter 'url' wajib disertakan.");
     }
     const data = new URLSearchParams();
     data.append("url", url);

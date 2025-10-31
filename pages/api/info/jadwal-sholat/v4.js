@@ -316,7 +316,7 @@ export default async function handler(req, res) {
   const params = req.method === "GET" ? req.query : req.body;
   if (!params.prov || !params.kab) {
     return res.status(400).json({
-      error: "Parameter 'prov' dan 'kab' wajib diisi untuk action 'search'."
+      error: "Paramenter 'prov' dan 'kab' wajib diisi untuk action 'search'."
     });
   }
   try {

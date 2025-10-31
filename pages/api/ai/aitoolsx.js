@@ -634,7 +634,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new AIToolsXAPI();
@@ -647,7 +647,7 @@ export default async function handler(req, res) {
       case "login":
         if (!params.email || !params.password) {
           return res.status(400).json({
-            error: "Parameter 'email' dan 'password' wajib diisi untuk action 'login'."
+            error: "Paramenter 'email' dan 'password' wajib diisi untuk action 'login'."
           });
         }
         response = await api.login(params);
@@ -655,7 +655,7 @@ export default async function handler(req, res) {
       case "txt2img":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' wajib diisi untuk action 'txt2img'."
+            error: "Paramenter 'prompt' wajib diisi untuk action 'txt2img'."
           });
         }
         response = await api.txt2img(params);
@@ -663,7 +663,7 @@ export default async function handler(req, res) {
       case "img2img":
         if (!params.imageUrl) {
           return res.status(400).json({
-            error: "Parameter 'imageUrl' wajib diisi untuk action 'img2img'."
+            error: "Paramenter 'imageUrl' wajib diisi untuk action 'img2img'."
           });
         }
         response = await api.img2img(params);
@@ -674,7 +674,7 @@ export default async function handler(req, res) {
       case "del_key":
         if (!params.key) {
           return res.status(400).json({
-            error: "Parameter 'key' wajib diisi untuk action 'del_key'."
+            error: "Paramenter 'key' wajib diisi untuk action 'del_key'."
           });
         }
         response = await api.del_key(params);
@@ -682,7 +682,7 @@ export default async function handler(req, res) {
       case "status":
         if (!params.key || !params.task_id) {
           return res.status(400).json({
-            error: "Parameter 'key' dan 'task_id' wajib diisi untuk action 'status'."
+            error: "Paramenter 'key' dan 'task_id' wajib diisi untuk action 'status'."
           });
         }
         response = await api.status(params);

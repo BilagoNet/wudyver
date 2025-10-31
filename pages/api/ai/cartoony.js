@@ -12,8 +12,7 @@ class CartoonyAPI {
       defaults: {
         quality: "medium",
         prompt: "Create a cartoony style image",
-        style: "anime",
-        genType: "standard"
+        style: "anime"
       }
     };
     this.session = {
@@ -51,7 +50,7 @@ class CartoonyAPI {
       const finalQuality = quality || this.config.defaults.quality;
       const finalPrompt = prompt || this.config.defaults.prompt;
       const finalStyle = style || this.config.defaults.style;
-      const finalGenType = genType || this.config.defaults.genType;
+      const finalGenType = imageUrl ? "image_to_image" : "text_to_image";
       if (imageUrl) {
         console.log("[Generate] Processing image...");
         let imageBuffer;
@@ -82,7 +81,7 @@ class CartoonyAPI {
       if (userData.rcUserId) formData.append("rc_user_id", userData.rcUserId);
       if (userData.packageId) formData.append("package_id", userData.packageId);
       if (userData.deviceId) formData.append("device_id", userData.deviceId);
-      console.log("[Generate] Sending request...");
+      console.log(`[Generate] Sending request with genType: ${finalGenType}...`);
       const {
         data
       } = await axios.post(`${this.config.base}${this.config.endpoint.generate}`, formData, {
@@ -128,7 +127,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi."
+      error: "Paramenter 'action' wajib diisi."
     });
   }
   const api = new CartoonyAPI();
@@ -138,7 +137,7 @@ export default async function handler(req, res) {
       case "generate":
         if (!params.prompt) {
           return res.status(400).json({
-            error: "Parameter 'prompt' wajib diisi untuk action 'generate'."
+            error: "Paramenter 'prompt' wajib diisi untuk action 'generate'."
           });
         }
         response = await api.generate(params);

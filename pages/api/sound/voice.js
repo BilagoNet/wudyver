@@ -5,7 +5,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!type) {
     return res.status(400).json({
-      error: 'Parameter "type" diperlukan'
+      error: 'Paramenter "type" diperlukan'
     });
   }
   const audioFiles = ["anjay", "ara-ara", "ara-ara-cowok", "ara-ara2", "arigatou", "assalamualaikum", "asu", "ayank", "aku-ngakak", "bacot", "bahagia-aku", "baka", "bansos", "beat-box", "beat-box2", "biasalah", "bidadari", "bot", "buka-pintu", "canda-anjing", "cepetan", "cuekin-terus", "daisuki-dayo", "daisuki", "dengan-mu", "gaboleh-gitu", "gak-lucu", "gamau", "gay", "gelay", "gitar", "gomenasai", "hai-bot", "hampa", "hayo", "hp-iphone", "i-like-you", "ih-wibu", "india", "karna-lo-wibu", "kiss", "kontol", "ku-coba", "maju-wibu", "makasih", "mastah", "nande-nande", "nani", "ngadi-ngadi", "nikah", "nuina", "onichan", "owner-sange", "ownerku", "pak-sapardi", "pale", "pantek", "pasi-pasi", "punten", "sayang", "siapa-sih", "sudah-biasa", "summertime", "tanya-bapak-lu", "to-the-bone", "wajib", "waku", "woi", "yamete", "yowaimo", "yoyowaimo"];
@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     }
   } else {
     return res.status(400).json({
-      error: 'Parameter "type" harus berupa angka'
+      error: 'Paramenter "type" harus berupa angka'
     });
   }
   try {

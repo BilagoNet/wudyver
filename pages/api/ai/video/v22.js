@@ -217,7 +217,7 @@ class NanoBananaSora2 {
       model = "sora2",
       type = "text-to-video"
     } = params;
-    if (!prompt) throw new Error('Parameter "prompt" diperlukan.');
+    if (!prompt) throw new Error('Paramenter "prompt" diperlukan.');
     await this._authenticate();
     const isImageToVideo = imageUrl && (Array.isArray(imageUrl) ? imageUrl.length > 0 : imageUrl.trim() !== "");
     const finalType = isImageToVideo ? "image-to-video" : "text-to-video";
@@ -274,7 +274,7 @@ class NanoBananaSora2 {
       task_id
     } = params;
     if (!task_id) {
-      throw new Error('Parameter "task_id" diperlukan.');
+      throw new Error('Paramenter "task_id" diperlukan.');
     }
     await this._authenticate();
     console.log(`⏳ Memeriksa status task: ${task_id}`);

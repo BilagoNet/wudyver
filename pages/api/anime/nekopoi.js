@@ -600,7 +600,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Parameter 'action' wajib diisi.",
+      error: "Paramenter 'action' wajib diisi.",
       actions: ["home", "category", "search", "detail"]
     });
   }
@@ -614,7 +614,7 @@ export default async function handler(req, res) {
       case "category":
         if (!params.slug) {
           return res.status(400).json({
-            error: "Parameter 'slug' wajib diisi untuk action 'category'.",
+            error: "Paramenter 'slug' wajib diisi untuk action 'category'.",
             examples: ["hentai", "2d-animation", "3d-hentai", "jav", "jav-cosplay"]
           });
         }
@@ -623,7 +623,7 @@ export default async function handler(req, res) {
       case "search":
         if (!params.query) {
           return res.status(400).json({
-            error: "Parameter 'query' wajib diisi untuk action 'search'."
+            error: "Paramenter 'query' wajib diisi untuk action 'search'."
           });
         }
         response = await api.search(params);
@@ -631,7 +631,7 @@ export default async function handler(req, res) {
       case "detail":
         if (!params.id) {
           return res.status(400).json({
-            error: "Parameter 'id' wajib diisi untuk action 'detail'."
+            error: "Paramenter 'id' wajib diisi untuk action 'detail'."
           });
         }
         response = await api.detail(params);

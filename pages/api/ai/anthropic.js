@@ -35,7 +35,7 @@ class AnthropicModel {
         content: prompt
       }];
     } else {
-      throw new Error("Parameter 'messages' (array objek pesan) atau 'prompt' (string/array blok konten untuk pesan pengguna tunggal) harus disediakan.");
+      throw new Error("Paramenter 'messages' (array objek pesan) atau 'prompt' (string/array blok konten untuk pesan pengguna tunggal) harus disediakan.");
     }
     const requestBody = {
       model: model,

@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!q) return res.status(400).json({
     result: {
-      error: 'Parameter "q" diperlukan.'
+      error: 'Paramenter "q" diperlukan.'
     }
   });
   const baseUrl = format === "jsonp" ? "https://searchcode.com/api/jsonp_codesearch_I/" : "https://searchcode.com/api/codesearch_I/";

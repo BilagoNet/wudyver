@@ -123,7 +123,7 @@ export default async function handler(req, res) {
       case "search":
         if (!query) {
           return res.status(400).json({
-            error: 'Parameter "query" is required for search action.'
+            error: 'Paramenter "query" is required for search action.'
           });
         }
         result = await usagipoi_scraper.search({
@@ -133,7 +133,7 @@ export default async function handler(req, res) {
       case "detail":
         if (!url) {
           return res.status(400).json({
-            error: 'Parameter "url" is required for detail action.'
+            error: 'Paramenter "url" is required for detail action.'
           });
         }
         result = await usagipoi_scraper.detail({
@@ -143,7 +143,7 @@ export default async function handler(req, res) {
       case "download":
         if (!url) {
           return res.status(400).json({
-            error: 'Parameter "url" is required for download action.'
+            error: 'Paramenter "url" is required for download action.'
           });
         }
         result = await usagipoi_scraper.download({

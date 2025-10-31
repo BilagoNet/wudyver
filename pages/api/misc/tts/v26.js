@@ -87,7 +87,7 @@ class AnyVoiceLab {
   }) {
     console.log(`Proses: Memulai pembuatan audio untuk voice_id: ${voice_id}...`);
     if (!text || !voice_id) {
-      throw new Error('Parameter "text" dan "voice_id" wajib diisi.');
+      throw new Error('Paramenter "text" dan "voice_id" wajib diisi.');
     }
     try {
       const form = new FormData();

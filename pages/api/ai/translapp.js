@@ -90,7 +90,7 @@ class Translapp {
           success: false,
           code: 400,
           result: {
-            error: `Parameter 'to' untuk TONE wajib diisi, pilih salah satu bree: ${this.tones.join(", ")} 🙈️`
+            error: `Paramenter 'to' untuk TONE wajib diisi, pilih salah satu bree: ${this.tones.join(", ")} 🙈️`
           }
         };
         if (to === "Other" && (!tone || tone.trim() === "")) return {
@@ -106,7 +106,7 @@ class Translapp {
           success: false,
           code: 400,
           result: {
-            error: "Parameter 'to' untuk TRANSLATE wajib diisi, input bahasa targetnya (contoh: 'English') 🙈️"
+            error: "Paramenter 'to' untuk TRANSLATE wajib diisi, input bahasa targetnya (contoh: 'English') 🙈️"
           }
         };
         break;
@@ -115,7 +115,7 @@ class Translapp {
           success: false,
           code: 400,
           result: {
-            error: `Parameter 'to' untuk REPLY wajib diisi, pilih salah satu bree: ${this.replies.join(", ")} 🙈️`
+            error: `Paramenter 'to' untuk REPLY wajib diisi, pilih salah satu bree: ${this.replies.join(", ")} 🙈️`
           }
         };
         break;
