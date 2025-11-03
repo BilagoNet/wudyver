@@ -1,40 +1,30 @@
-// pages/api/upscale-luca.js
-
 import axios from "axios";
 import FormData from "form-data";
-import { EventSource } from "eventsource";
-
-/**
- * Class untuk berinteraksi dengan API Upscaling Gambar Gradio dari Luca115.
- */
+import {
+  EventSource
+} from "eventsource";
 class LucaBestUpscaling {
   constructor() {
     this.baseURL = "https://luca115-best-upscaling-models.hf.space/gradio_api";
-    // Header disesuaikan dengan cURL yang diberikan untuk upscaling
     this.headers = {
-      "accept": "*/*",
+      accept: "*/*",
       "accept-language": "id-ID",
       "cache-control": "no-cache",
-      "origin": "https://upsampler.com",
-      "pragma": "no-cache",
-      "priority": "u=1, i",
-      "referer": "https://upsampler.com/",
+      origin: "https://upsampler.com",
+      pragma: "no-cache",
+      priority: "u=1, i",
+      referer: "https://upsampler.com/",
       "sec-ch-ua": '"Chromium";v="127", "Not)A;Brand";v="99", "Microsoft Edge Simulate";v="127", "Lemur";v="127"',
       "sec-ch-ua-mobile": "?1",
       "sec-ch-ua-platform": '"Android"',
       "sec-fetch-dest": "empty",
       "sec-fetch-mode": "cors",
       "sec-fetch-site": "cross-site",
-      "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36",
+      "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36"
     };
     this.uploadId = Math.random().toString(36).slice(2);
-    this.sessionHash = "up" + Math.random().toString(36).slice(2); // Prefix 'up' untuk upscaling
+    this.sessionHash = "up" + Math.random().toString(36).slice(2);
   }
-
-  /**
-   * Mengunggah gambar (Buffer, URL, atau Base64) ke Gradio API.
-   * Logika ini identik dengan LucaBackgroundRemove.
-   */
   async upload(imageInput) {
     let buffer, mime, filename;
     try {
@@ -70,23 +60,28 @@ class LucaBestUpscaling {
       } else {
         throw new Error("imageUrl must be string (URL/base64) or Buffer");
       }
-      
       const form = new FormData();
-      form.append("files", buffer, { filename, contentType: mime });
-      
-      const res = await axios.post(`${this.baseURL}/upload?upload_id=${this.uploadId}`, form, {
-        headers: { ...this.headers, ...form.getHeaders() }
+      form.append("files", buffer, {
+        filename: filename,
+        contentType: mime
       });
-      
+      const res = await axios.post(`${this.baseURL}/upload?upload_id=${this.uploadId}`, form, {
+        headers: {
+          ...this.headers,
+          ...form.getHeaders()
+        }
+      });
       console.log(`[UPSCALING] Uploaded: ${res.data[0]}`);
       await this.waitUploadProgress();
-      return { path: res.data[0], mime: mime };
+      return {
+        path: res.data[0],
+        mime: mime
+      };
     } catch (err) {
       console.error(`[UPSCALING] Upload failed:`, err.message);
       throw err;
     }
   }
-
   detectMimeFromBuffer(buffer) {
     const header = buffer.slice(0, 4).toString("hex").toLowerCase();
     if (header.startsWith("ffd8ffe")) return "image/jpeg";
@@ -95,10 +90,11 @@ class LucaBestUpscaling {
     if (header.startsWith("52494646")) return "image/webp";
     return null;
   }
-
   waitUploadProgress() {
     return new Promise((resolve, reject) => {
-      const es = new EventSource(`${this.baseURL}/upload_progress?upload_id=${this.uploadId}`, { headers: this.headers });
+      const es = new EventSource(`${this.baseURL}/upload_progress?upload_id=${this.uploadId}`, {
+        headers: this.headers
+      });
       es.onmessage = e => {
         if (e.data && e.data !== "[DONE]") {
           const data = JSON.parse(e.data);
@@ -108,58 +104,59 @@ class LucaBestUpscaling {
           }
         }
       };
-      es.onerror = err => { es.close(); reject(err); };
+      es.onerror = err => {
+        es.close();
+        reject(err);
+      };
     });
   }
-
-  /**
-   * Memulai proses upscaling dan memantau hasilnya.
-   */
-  async generate({ imageUrl, model }) {
+  async generate({
+    imageUrl,
+    model
+  }) {
     if (!imageUrl) throw new Error("imageUrl is required");
-    
-    const { path, mime } = await this.upload(imageUrl);
+    const {
+      path,
+      mime
+    } = await this.upload(imageUrl);
     const imageData = {
       path: path,
-      meta: { _type: "gradio.FileData" }
+      meta: {
+        _type: "gradio.FileData"
+      }
     };
-
-    // Menggunakan optional chaining dan logic OR untuk default model
     const selectedModel = model || "4xRealHATGANSharper";
-
     const payload = {
-      data: [imageData, selectedModel], // Payload sesuai cURL: [gambar, model_string]
+      data: [imageData, selectedModel],
       event_data: null,
-      fn_index: 1, // fn_index untuk upscaling adalah 1
+      fn_index: 1,
       trigger_id: null,
       session_hash: this.sessionHash
     };
-    
     console.log(`[UPSCALING] Joining queue with model: ${selectedModel}...`);
     await axios.post(`${this.baseURL}/queue/join?`, payload, {
-      headers: { ...this.headers, 'content-type': 'application/json' }
+      headers: {
+        ...this.headers,
+        "content-type": "application/json"
+      }
     });
-    
     return await this.autoPoll();
   }
-
-  /**
-   * Memantau antrian Gradio untuk mendapatkan hasil.
-   */
   autoPoll() {
     return new Promise((resolve, reject) => {
       console.log("[UPSCALING] Polling result...");
-      const es = new EventSource(`${this.baseURL}/queue/data?session_hash=${this.sessionHash}`, { headers: this.headers });
-      
+      const es = new EventSource(`${this.baseURL}/queue/data?session_hash=${this.sessionHash}`, {
+        headers: this.headers
+      });
       es.onmessage = e => {
         if (!e.data || e.data === "[DONE]") return;
         let data;
         try {
           data = JSON.parse(e.data);
-        } catch { return; }
-        
+        } catch {
+          return;
+        }
         console.log(`[UPSCALING] ${data.msg}`);
-        
         if (data.msg === "process_completed" && data.output) {
           es.close();
           resolve(data.output);
@@ -168,34 +165,27 @@ class LucaBestUpscaling {
           reject(new Error("Upscaling process failed on the server."));
         }
       };
-      
       es.onerror = () => {
         es.close();
         reject(new Error("Polling failed or connection lost"));
       };
-      
       setTimeout(() => {
         es.close();
         reject(new Error("Upscaling process timeout (90s)"));
-      }, 90000); // Timeout lebih lama untuk upscaling
+      }, 9e4);
     });
   }
 }
-
-/**
- * Handler untuk API route Next.js.
- */
 export default async function handler(req, res) {
   const params = req.method === "GET" ? req.query : req.body;
-
   if (!params.imageUrl) {
-    return res.status(400).json({ error: "Parameter 'imageUrl' is required" });
+    return res.status(400).json({
+      error: "Parameter 'imageUrl' is required"
+    });
   }
-
   try {
     const api = new LucaBestUpscaling();
-    // params akan meneruskan imageUrl dan model (jika ada) ke fungsi generate
-    const response = await api.generate(params); 
+    const response = await api.generate(params);
     return res.status(200).json(response);
   } catch (error) {
     return res.status(500).json({
