@@ -37,7 +37,7 @@ class MusicGenerator {
         })
       });
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(`Gagal mendapatkan token Firebase: ${errorData.error?.message || response.statusText}`);
       }
       const data = await response.json();
@@ -57,15 +57,13 @@ class MusicGenerator {
     console.log(`\n--- Memulai Proses Sign Up / Registrasi ke Backend ---`);
     try {
       const firebaseToken = await this.getAnonymousToken();
-      if (!firebaseToken) {
-        throw new Error("Tidak bisa mendapatkan token Firebase untuk sign up.");
-      }
-      console.log("Proses: [Langkah 2] Mengirim token Firebase ke API /users untuk registrasi...");
+      if (!firebaseToken) throw new Error("Tidak bisa mendapatkan token Firebase.");
+      console.log("Proses: [Langkah 2] Mengirim token ke API /users...");
       const form = new URLSearchParams();
       form.append("jwt", firebaseToken);
-      form.append("payment_gateway_id", firebaseToken);
-      form.append("adv_params", "{}");
-      form.append("invite_code", firebaseToken);
+      form.append("payment_gateway_id", payment_gateway_id);
+      form.append("adv_params", adv_params || "{}");
+      form.append("invite_code", invite_code);
       const userData = await this.apiCall("users", {
         method: "POST",
         body: form,
@@ -76,33 +74,31 @@ class MusicGenerator {
         useAuth: false
       });
       if (userData) {
-        console.log("Proses: [Langkah 3] Sign up ke backend berhasil. Menyimpan JWT untuk sesi ini.");
+        console.log("Proses: [Langkah 3] Sign up berhasil. JWT disimpan.");
         this.jwt = firebaseToken;
         return userData;
       }
       return null;
     } catch (error) {
-      console.error("Error selama proses sign up ke backend:", error.message);
+      console.error("Error selama sign up:", error.message);
       return null;
     }
   }
   async ensureJwt(providedToken) {
     if (providedToken) return providedToken;
     if (this.jwt) return this.jwt;
-    console.log("Proses: JWT backend tidak ditemukan. Menjalankan proses sign up otomatis...");
+    console.log("Proses: JWT tidak ada. Melakukan sign up otomatis...");
     await this.signUp();
-    if (!this.jwt) {
-      throw new Error("Gagal menginisialisasi sesi. Proses sign up tidak berhasil mengisi JWT.");
-    }
+    if (!this.jwt) throw new Error("Gagal inisialisasi sesi: sign up tidak menghasilkan JWT.");
     return this.jwt;
   }
   async apiCall(endpoint, options, config = {}) {
     const {
-      jwt,
+      jwt: configJwt,
       useAuth = true
     } = config;
     try {
-      const token = useAuth ? await this.ensureJwt(jwt) : null;
+      const token = useAuth ? await this.ensureJwt(configJwt) : null;
       const url = new URL(endpoint, this.baseUrl);
       const headers = {
         "User-Agent": "NodeJS/1.0"
@@ -114,45 +110,45 @@ class MusicGenerator {
         ...headers,
         ...options.headers
       };
-      console.log(`Proses: Melakukan request ke ${options.method || "GET"} ${url}`);
+      console.log(`Proses: ${options.method || "GET"} ${url}`);
       const response = await fetch(url, options);
       if (!response.ok) {
         const errorBody = await response.text();
         console.error(`Error Body: ${errorBody}`);
-        throw new Error(`Request gagal dengan status ${response.status}: ${response.statusText}`);
+        throw new Error(`Request gagal: ${response.status} ${response.statusText}`);
       }
-      const responseData = await response.json()?.catch(() => null);
+      const responseData = await response.json().catch(() => null);
       console.log("Proses: Request berhasil.");
       return responseData?.response?.body || responseData;
     } catch (error) {
-      console.error(`Error dalam proses request ke ${endpoint}:`, error.message);
+      console.error(`Error di apiCall(${endpoint}):`, error.message);
       return null;
     }
   }
   async generate(params) {
     const {
-      prompt,
-      title,
-      vocal,
-      gender,
-      mood,
-      genre,
-      lyrics,
-      tags,
-      imageData,
-      jwt
+      prompt = "Sebuah lagu yang indah",
+        title = "Untitled",
+        vocal = true,
+        gender = "",
+        mood = "",
+        genre = "",
+        lyrics = "",
+        tags = "",
+        imageData = "",
+        jwt
     } = params;
     console.log(`\n--- Memulai Proses Generate Lagu ---`);
     const form = new URLSearchParams();
-    form.append("prompt", prompt || "Sebuah lagu yang indah");
-    form.append("title", title || "Untitled");
-    form.append("instrumental", vocal === false ? 1 : 0);
-    form.append("gender", gender || "");
-    form.append("mood", mood || "");
-    form.append("genre", genre || "");
-    form.append("lyrics", lyrics || "");
-    form.append("tags", tags || "");
-    form.append("imageData", imageData || "");
+    form.append("prompt", prompt);
+    form.append("title", title);
+    form.append("instrumental", vocal === false ? "1" : "0");
+    form.append("gender", gender);
+    form.append("mood", mood);
+    form.append("genre", genre);
+    form.append("lyrics", lyrics);
+    form.append("tags", tags);
+    form.append("imageData", imageData);
     const result = await this.apiCall("songs", {
       method: "POST",
       body: form,
@@ -162,6 +158,9 @@ class MusicGenerator {
     }, {
       jwt: jwt
     });
+    if (!result?.taskId || !result?.provider) {
+      throw new Error("Gagal generate: taskId atau provider tidak ditemukan.");
+    }
     const payload = {
       jwt: this.jwt,
       taskId: result.taskId,
@@ -178,20 +177,25 @@ class MusicGenerator {
   async status(params) {
     const {
       task_id,
-      provider,
       jwt
     } = params;
     console.log(`[STATUS] Decoding task_id: ${task_id}`);
-    const {
-      taskId,
-      provider,
-      jwt
-    } = await this.dec(task_id);
-    console.log(`\n--- Memulai Proses Cek Status Lagu ---`);
-    if (!taskId || !provider) {
-      console.error("Error: taskId dan provider diperlukan.");
+    let decoded;
+    try {
+      decoded = JSON.parse(await this.dec(task_id));
+    } catch (err) {
+      console.error("Gagal decode task_id:", err);
       return null;
     }
+    const {
+      taskId,
+      provider
+    } = decoded;
+    if (!taskId || !provider) {
+      console.error("Error: taskId atau provider tidak valid dari task_id.");
+      return null;
+    }
+    console.log(`\n--- Cek Status Task: ${taskId} ---`);
     const endpoint = `songs/providers/${provider}/tasks/${taskId}`;
     return await this.apiCall(endpoint, {
       method: "GET",
@@ -210,7 +214,7 @@ export default async function handler(req, res) {
   } = req.method === "GET" ? req.query : req.body;
   if (!action) {
     return res.status(400).json({
-      error: "Paramenter 'action' wajib diisi."
+      error: "Parameter 'action' wajib diisi."
     });
   }
   const api = new MusicGenerator();
@@ -220,7 +224,7 @@ export default async function handler(req, res) {
       case "generate":
         if (!params.prompt && !params.lyrics) {
           return res.status(400).json({
-            error: "Paramenter 'prompt', atau 'lyrics' wajib diisi."
+            error: "Parameter 'prompt' atau 'lyrics' wajib diisi."
           });
         }
         result = await api.generate(params);
@@ -228,7 +232,7 @@ export default async function handler(req, res) {
       case "status":
         if (!params.task_id) {
           return res.status(400).json({
-            error: "Paramenter 'task_id' wajib diisi."
+            error: "Parameter 'task_id' wajib diisi."
           });
         }
         result = await api.status(params);
