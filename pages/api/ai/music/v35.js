@@ -42,13 +42,7 @@ class ApiMusicClient {
       } else {
         data = await res.text();
       }
-      return {
-        ok: res.ok,
-        status: res.status,
-        statusText: res.statusText,
-        headers: Object.fromEntries(res.headers.entries()),
-        data: data
-      };
+      return data;
     } catch (e) {
       console.error(`Req: Failed → ${e.message}`);
       return {
@@ -74,7 +68,7 @@ class ApiMusicClient {
     const url = this.cfg.base + this.cfg.ep.create;
     const payload = {
       input: {
-        description: prompt || "",
+        description: prompt || `[Verse]\nAisles stretching out like endless dreams\nCereal boxes and canned food schemes\nPickle jars and pasta towers\nLost for hours in neon flowered scenes\n[Chorus]\nTrolley rolling to a distant beat\nDancing down the frozen treat street\nMilk's going wild in the dairy lane\nGet lost with me in this bizarre terrain`,
         duration: duration,
         ...rest
       }

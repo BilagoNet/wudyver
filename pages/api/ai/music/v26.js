@@ -91,7 +91,7 @@ class BachAIClient {
       const {
         customMode = false,
           prompt = `[Verse]\nAisles stretching out like endless dreams\nCereal boxes and canned food schemes\nPickle jars and pasta towers\nLost for hours in neon flowered scenes\n[Chorus]\nTrolley rolling to a distant beat\nDancing down the frozen treat street\nMilk's going wild in the dairy lane\nGet lost with me in this bizarre terrain`,
-          title = "untitled",
+          title: "Rise of the Titans",
           style = "pop",
           instrumental = false
       } = options;

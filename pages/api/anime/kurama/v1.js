@@ -1,17 +1,20 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
-import apiConfig from "@/configs/apiConfig";
+import PROXY from "@/configs/proxy-url";
+const proxy = PROXY.url;
+console.log("CORS proxy", proxy);
 const HOST_MAP = {
   1: "kuramanime.com",
   2: "kuramanime.pro",
-  3: "kuramanime.run"
+  3: "kuramanime.run",
+  4: "kuramanime.tel"
 };
 class Kurama {
   constructor({
-    host = 3
+    host = 4
   } = {}) {
     this.setHost(host);
-    this.proxy = `https://${apiConfig.DOMAIN_URL}/api/tools/web/html/v8?url=`;
+    this.proxy = proxy;
   }
   setHost(host) {
     const domain = HOST_MAP[host] || HOST_MAP[3];
@@ -26,7 +29,7 @@ class Kurama {
   }
   async fetchHtml(url) {
     try {
-      const proxyUrl = `${this.proxy}${encodeURIComponent(url)}`;
+      const proxyUrl = `${this.proxy}${url}`;
       const {
         data
       } = await axios.get(proxyUrl, {
@@ -36,6 +39,194 @@ class Kurama {
     } catch (err) {
       console.error("fetchHtml error:", err.message);
       throw new Error("Failed to fetch HTML content.");
+    }
+  }
+  _parseListItem($, el) {
+    const item = $(el);
+    const link = item.attr("href");
+    const animeIdMatch = link ? link.match(/\/anime\/(\d+)\//) : null;
+    const animeId = animeIdMatch ? animeIdMatch[1] : null;
+    const episodeOrRating = item.find(".ep > span:first-child").text().trim().replace(/\s+/g, " ") || item.find(".ep").text().trim().replace(/\s+/g, " ");
+    return {
+      id: animeId,
+      title: item.find("h5.sidebar-title-h5").text().trim(),
+      link: link,
+      image: item.find(".set-bg").attr("data-setbg") || "",
+      info: episodeOrRating,
+      quality: item.find(".view").text().trim() || "",
+      status: item.find(".d-none span").text().trim() || ""
+    };
+  }
+  _parsePagination($) {
+    return $(".product__pagination a").get().map(el => {
+      const linkEl = $(el);
+      return {
+        text: linkEl.text().trim().replace("...", ""),
+        link: linkEl.attr("href"),
+        isCurrent: linkEl.hasClass("current-page"),
+        isDisabled: linkEl.attr("aria-disabled") === "true"
+      };
+    }).filter(v => v.text);
+  }
+  async home() {
+    try {
+      const homeUrl = `https://${this.host}/`;
+      const html = await this.fetchHtml(homeUrl);
+      const $ = cheerio.load(html);
+      const parseAnimeItem = ($, el) => {
+        const item = $(el);
+        return {
+          title: item.find("h5.sidebar-title-h5").text().trim(),
+          link: item.attr("href"),
+          image: item.find(".set-bg").attr("data-setbg") || "",
+          rating: item.find(".ep").text().trim().replace(/\s+/g, " ") || "N/A",
+          quality: item.find(".view").text().trim() || ""
+        };
+      };
+      const getSectionData = (section, title) => {
+        const items = section.find(".filter__gallery > a").get().map(el => parseAnimeItem($, el));
+        const seeAllLink = section.find(".btn__all a").attr("href");
+        return {
+          items: items,
+          seeAll: seeAllLink
+        };
+      };
+      const sections = $(".trending__product");
+      const ongoingSection = sections.filter((i, el) => $(el).find(".section-title h4").text().trim() === "Sedang Tayang").eq(0);
+      const finishedSection = sections.filter((i, el) => $(el).find(".section-title h4").text().trim() === "Selesai Tayang").eq(0);
+      const movieSection = sections.filter((i, el) => $(el).find(".section-title h4").text().trim() === "Film Layar Lebar").eq(0);
+      const ongoing = getSectionData(ongoingSection, "Sedang Tayang");
+      const finished = getSectionData(finishedSection, "Selesai Tayang");
+      const movies = getSectionData(movieSection, "Film Layar Lebar");
+      return {
+        ongoing: ongoing,
+        finished: finished,
+        movies: movies
+      };
+    } catch (err) {
+      console.error("home error:", err.message);
+      throw err;
+    }
+  }
+  async schedule({
+    day = getDayName(new Date())
+  } = {}) {
+    try {
+      const scheduledDay = day.toLowerCase();
+      const url = `https://${this.host}/schedule?scheduled_day=${scheduledDay}`;
+      const html = await this.fetchHtml(url);
+      const $ = cheerio.load(html);
+      const dayTitle = $(".product__page__title .section-title h4 .choosenProperty").text().replace(":", "").trim();
+      const items = $("#animeList .filter__gallery > a").get().map(el => {
+        const item = $(el);
+        const idRegex = item.find("input[class*='actual-schedule-ep-']").attr("class")?.match(/actual-schedule-ep-(\d+)-real/);
+        const animeId = idRegex ? idRegex[1] : null;
+        const epStatus = item.find(".ep > span:not([style*='display: none'])").text().trim().replace(/\s+/g, " ");
+        const nextEpisodeEl = item.find(`.actual-schedule-ep-${animeId}`);
+        const nextEpisodeText = nextEpisodeEl.length ? nextEpisodeEl.text().trim().replace("Selanjutnya: Ep", "").trim() : null;
+        const totalEpEl = item.find(`.total-eps-${animeId}`);
+        const totalEpisodes = totalEpEl.length ? totalEpEl.val() : null;
+        const scheduleInfo = item.find(`.actual-schedule-info-${animeId}`).text().trim().replace(/\s+/g, " ");
+        return {
+          id: animeId,
+          title: item.find("h5.sidebar-title-h5").text().trim(),
+          link: item.attr("href"),
+          image: item.find(".set-bg").attr("data-setbg") || "",
+          status: epStatus,
+          nextEpisode: nextEpisodeText,
+          totalEpisodes: totalEpisodes && totalEpisodes !== "0" ? parseInt(totalEpisodes) : null,
+          schedule: scheduleInfo
+        };
+      }).filter(v => v.link && v.title);
+      const pagination = this._parsePagination($);
+      return {
+        day: dayTitle,
+        items: items,
+        pagination: pagination
+      };
+    } catch (err) {
+      console.error("schedule error:", err.message);
+      throw err;
+    }
+  }
+  async ongoing({
+    order_by = "latest",
+    page = 1
+  } = {}) {
+    try {
+      const url = `https://${this.host}/quick/ongoing?order_by=${order_by.toLowerCase()}&page=${page}`;
+      const html = await this.fetchHtml(url);
+      const $ = cheerio.load(html);
+      const orderByText = $(".product__page__filter .nice-select .current").text().trim() || order_by;
+      const items = $("#animeList .filter__gallery > a").get().map(el => {
+        const item = $(el);
+        const link = item.attr("href");
+        const animeIdMatch = link ? link.match(/\/anime\/(\d+)\//) : null;
+        const animeId = animeIdMatch ? animeIdMatch[1] : null;
+        return {
+          id: animeId,
+          title: item.find("h5.sidebar-title-h5").text().trim(),
+          link: link,
+          image: item.find(".set-bg").attr("data-setbg") || "",
+          episode: item.find(".ep > span:first-child").text().trim().replace(/\s+/g, " ") || "N/A",
+          quality: item.find(".view").text().trim() || "",
+          status: item.find(".d-none span").text().trim() || ""
+        };
+      }).filter(v => v.link && v.title);
+      const pagination = this._parsePagination($);
+      return {
+        pageTitle: "Sedang Tayang",
+        orderBy: orderByText,
+        items: items,
+        pagination: pagination
+      };
+    } catch (err) {
+      console.error("ongoing error:", err.message);
+      throw err;
+    }
+  }
+  async finished({
+    order_by = "latest",
+    page = 1
+  } = {}) {
+    try {
+      const url = `https://${this.host}/quick/finished?order_by=${order_by.toLowerCase()}&page=${page}`;
+      const html = await this.fetchHtml(url);
+      const $ = cheerio.load(html);
+      const orderByText = $(".product__page__filter .nice-select .current").text().trim() || order_by;
+      const items = $("#animeList .filter__gallery > a").get().map(el => this._parseListItem($, el));
+      const pagination = this._parsePagination($);
+      return {
+        pageTitle: "Selesai Tayang",
+        orderBy: orderByText,
+        items: items,
+        pagination: pagination
+      };
+    } catch (err) {
+      console.error("finished error:", err.message);
+      throw err;
+    }
+  }
+  async movie({
+    order_by = "latest",
+    page = 1
+  } = {}) {
+    try {
+      const url = `https://${this.host}/quick/movie?order_by=${order_by.toLowerCase()}&page=${page}`;
+      const html = await this.fetchHtml(url);
+      const $ = cheerio.load(html);
+      const orderByText = $(".product__page__filter .nice-select .current").text().trim() || order_by;
+      const items = $("#animeList .filter__gallery > a").get().map(el => this._parseListItem($, el));
+      const pagination = this._parsePagination($);
+      return {
+        pageTitle: "Film Layar Lebar",
+        orderBy: orderByText,
+        items: items,
+        pagination: pagination
+      };
+    } catch (err) {
+      console.error("movie error:", err.message);
+      throw err;
     }
   }
   async search({
@@ -176,6 +367,21 @@ export default async function handler(req, res) {
   try {
     let result;
     switch (action) {
+      case "home":
+        result = await kurama.home();
+        break;
+      case "schedule":
+        result = await kurama.schedule(params);
+        break;
+      case "ongoing":
+        result = await kurama.ongoing(params);
+        break;
+      case "finished":
+        result = await kurama.finished(params);
+        break;
+      case "movie":
+        result = await kurama.movie(params);
+        break;
       case "search":
         if (!params.query) {
           return res.status(400).json({
@@ -202,7 +408,7 @@ export default async function handler(req, res) {
         break;
       default:
         return res.status(400).json({
-          error: `Invalid action: ${action}. Allowed actions: search | detail | download`
+          error: `Invalid action: ${action}. Allowed actions: home | schedule | ongoing | finished | movie | search | detail | download`
         });
     }
     return res.status(200).json(result);

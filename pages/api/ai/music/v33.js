@@ -50,9 +50,9 @@ class MusicGenerator {
   }
   async signUp(params = {}) {
     const {
-      payment_gateway_id = "",
-        adv_params = "",
-        invite_code = ""
+      payment_gateway_id = Math.random().toString(36).substring(2),
+        adv_params = "{}",
+        invite_code = Math.random().toString(36).substring(2)
     } = params;
     console.log(`\n--- Memulai Proses Sign Up / Registrasi ke Backend ---`);
     try {
@@ -62,7 +62,7 @@ class MusicGenerator {
       const form = new URLSearchParams();
       form.append("jwt", firebaseToken);
       form.append("payment_gateway_id", payment_gateway_id);
-      form.append("adv_params", adv_params || "{}");
+      form.append("adv_params", adv_params);
       form.append("invite_code", invite_code);
       const userData = await this.apiCall("users", {
         method: "POST",
@@ -127,8 +127,8 @@ class MusicGenerator {
   }
   async generate(params) {
     const {
-      prompt = "Sebuah lagu yang indah",
-        title = "Untitled",
+      prompt = `[Verse]\nAisles stretching out like endless dreams\nCereal boxes and canned food schemes\nPickle jars and pasta towers\nLost for hours in neon flowered scenes\n[Chorus]\nTrolley rolling to a distant beat\nDancing down the frozen treat street\nMilk's going wild in the dairy lane\nGet lost with me in this bizarre terrain`,
+        title: "Rise of the Titans",
         vocal = true,
         gender = "",
         mood = "",

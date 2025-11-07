@@ -96,7 +96,8 @@ class Api302Service {
       const path = "/submit/music";
       let data = {
         mv: "chirp-v3-5",
-        make_instrumental: false
+        make_instrumental: false,
+        ...rest
       };
       let logMsg = "";
       if (isContinue) {
