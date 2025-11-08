@@ -38,25 +38,6 @@ class Gemini {
       throw e;
     }
   }
-  async p(name) {
-    const url = `${this.config.baseUrl}/${name}?key=${this.config.apiKey}`;
-    console.log(`[POLL] ${url}`);
-    while (true) {
-      try {
-        await new Promise(r => setTimeout(r, 2e3));
-        const res = await fetch(url);
-        const data = await res.json();
-        if (!res.ok) throw new Error(`Poll HTTP ${res.status}`);
-        if (data.done) {
-          console.log("[POLL DONE]");
-          return data;
-        }
-      } catch (e) {
-        console.error("[POLL ERR]", e.message);
-        throw e;
-      }
-    }
-  }
   async _toB64(imageUrl) {
     if (!imageUrl) return null;
     try {
@@ -76,6 +57,20 @@ class Gemini {
       throw new Error("imageUrl type not supported");
     } catch (e) {
       console.error("[IMG CONV ERR]", e.message);
+      throw e;
+    }
+  }
+  async _downloadFile(url) {
+    const fullUrl = `${url}?key=${this.config.apiKey}`;
+    console.log(`[DOWNLOAD] ${fullUrl}`);
+    try {
+      const res = await fetch(fullUrl);
+      if (!res.ok) throw new Error(`Download failed ${res.status}`);
+      const buffer = Buffer.from(await res.arrayBuffer());
+      console.log(`[DOWNLOAD OK] ${buffer.length} bytes`);
+      return buffer;
+    } catch (e) {
+      console.error("[DOWNLOAD ERR]", e.message);
       throw e;
     }
   }
@@ -128,6 +123,25 @@ class Gemini {
       throw e;
     }
   }
+  async p(name) {
+    const url = `${this.config.baseUrl}/${name}?key=${this.config.apiKey}`;
+    console.log(`[POLL] ${url}`);
+    while (true) {
+      try {
+        await new Promise(r => setTimeout(r, 2e3));
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!res.ok) throw new Error(`Poll HTTP ${res.status}`);
+        if (data.done) {
+          console.log("[POLL DONE]");
+          return data;
+        }
+      } catch (e) {
+        console.error("[POLL ERR]", e.message);
+        throw e;
+      }
+    }
+  }
   async veo({
     prompt,
     ar = "16:9",
@@ -148,20 +162,21 @@ class Gemini {
       });
       const name = op?.name;
       if (!name) throw new Error("No operation name");
-      return await this.p(name);
+      const data = await this.p(name);
+      const videoUri = data?.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri;
+      if (videoUri) {
+        console.log("[veo] downloading video...");
+        const videoBuffer = await this._downloadFile(videoUri);
+        return {
+          type: "video",
+          mimeType: "video/mp4",
+          buffer: videoBuffer,
+          metadata: data
+        };
+      }
+      throw new Error("No video URI in response");
     } catch (e) {
       console.error("[veo] failed");
-      throw e;
-    }
-  }
-  async veo_stats({
-    ...rest
-  }) {
-    console.log("[veo_stats] start");
-    try {
-      return await this.r("/models/veo-3.1-generate-preview:get", rest);
-    } catch (e) {
-      console.error("[veo_stats] failed");
       throw e;
     }
   }
@@ -172,7 +187,7 @@ class Gemini {
   }) {
     console.log("[imagen] start");
     try {
-      return await this.r("/models/imagen-4.0-generate-001:predict", {
+      const data = await this.r("/models/imagen-4.0-generate-001:predict", {
         instances: [{
           prompt: prompt
         }],
@@ -181,6 +196,17 @@ class Gemini {
           ...rest
         }
       });
+      const prediction = data?.predictions?.[0];
+      if (prediction?.bytesBase64Encoded) {
+        const imageBuffer = Buffer.from(prediction.bytesBase64Encoded, "base64");
+        return {
+          type: "image",
+          mimeType: prediction.mimeType || "image/png",
+          buffer: imageBuffer,
+          metadata: data
+        };
+      }
+      throw new Error("No image data in response");
     } catch (e) {
       console.error("[imagen] failed");
       throw e;
@@ -198,24 +224,33 @@ class Gemini {
       const parts = [{
         text: prompt
       }];
-      if (data) parts.push({
-        inline_data: {
-          mime_type: mime,
-          data: data
-        }
-      });
-      const d = await this.r("/models/gemini-2.5-flash-image:generateContent", {
+      if (data) {
+        parts.push({
+          inline_data: {
+            mime_type: mime,
+            data: data
+          }
+        });
+      }
+      const result = await this.r("/models/gemini-2.5-flash-image:generateContent", {
         contents: [{
           parts: parts
         }],
         ...rest
       });
-      const pend = d?.candidates?.[0]?.content?.parts?.[0]?.pendingGeneration?.operation?.name;
-      if (pend) {
-        console.log("[img] pending → poll");
-        return await this.p(pend);
+      const imagePart = result?.candidates?.[0]?.content?.parts?.find(part => part.inlineData || part.inline_data);
+      if (imagePart) {
+        const inlineData = imagePart.inlineData || imagePart.inline_data;
+        const imageBuffer = Buffer.from(inlineData.data, "base64");
+        const mimeType = inlineData.mimeType || inlineData.mime_type || "image/png";
+        return {
+          type: "image",
+          mimeType: mimeType,
+          buffer: imageBuffer,
+          metadata: result
+        };
       }
-      return d;
+      throw new Error("No image data in response");
     } catch (e) {
       console.error("[img] failed");
       throw e;
@@ -243,7 +278,7 @@ export default async function handler(req, res) {
           });
         }
         response = await api.chat(params);
-        break;
+        return res.status(200).json(response);
       case "veo":
         if (!params.prompt) {
           return res.status(400).json({
@@ -251,10 +286,9 @@ export default async function handler(req, res) {
           });
         }
         response = await api.veo(params);
-        break;
-      case "veo_stats":
-        response = await api.veo_stats(params);
-        break;
+        res.setHeader("Content-Type", response.mimeType);
+        res.setHeader("Content-Disposition", 'attachment; filename="video.mp4"');
+        return res.status(200).send(response.buffer);
       case "imagen":
         if (!params.prompt) {
           return res.status(400).json({
@@ -262,7 +296,8 @@ export default async function handler(req, res) {
           });
         }
         response = await api.imagen(params);
-        break;
+        res.setHeader("Content-Type", response.mimeType);
+        return res.status(200).send(response.buffer);
       case "image":
         if (!params.prompt) {
           return res.status(400).json({
@@ -270,16 +305,16 @@ export default async function handler(req, res) {
           });
         }
         response = await api.img(params);
-        break;
+        res.setHeader("Content-Type", response.mimeType);
+        return res.status(200).send(response.buffer);
       case "models":
         response = await api.listModels();
-        break;
+        return res.status(200).json(response);
       default:
         return res.status(400).json({
-          error: `Action tidak valid: ${action}. Didukung: models, chat, veo, veo_stats, imagen, image.`
+          error: `Action tidak valid: ${action}. Didukung: models, chat, veo, imagen, image.`
         });
     }
-    return res.status(200).json(response);
   } catch (error) {
     console.error(`[FATAL] action '${action}':`, error);
     return res.status(500).json({

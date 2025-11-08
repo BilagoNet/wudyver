@@ -1,4 +1,5 @@
 import fetch from "node-fetch";
+import FormData from "form-data";
 class NanoBananaEditor {
   constructor(config = {}) {
     this.config = {
@@ -45,14 +46,16 @@ class NanoBananaEditor {
       if (imageInput.startsWith("http")) {
         const res = await fetch(imageInput);
         if (!res.ok) throw new Error("Failed to download image");
-        return (await res.buffer()).toString("base64");
+        const arrayBuffer = await res.arrayBuffer();
+        return Buffer.from(arrayBuffer);
       } else if (imageInput.startsWith("data:")) {
-        return imageInput.split(",")[1];
+        const base64 = imageInput.split(",")[1];
+        return Buffer.from(base64, "base64");
       } else {
-        return imageInput;
+        return Buffer.from(imageInput, "base64");
       }
     } else if (Buffer.isBuffer(imageInput)) {
-      return imageInput.toString("base64");
+      return imageInput;
     }
     throw new Error("Invalid image input");
   }
@@ -78,22 +81,45 @@ class NanoBananaEditor {
     const endpoint = isEdit ? "/editImage" : "/generateImage";
     const url = `${this.config.baseUrl}${endpoint}`;
     const idToken = await this._ensureAuth();
-    const payload = {
-      prompt: prompt,
-      ...isEdit && {
-        image: await this.processImageInput(imageUrl)
-      },
-      ...rest
-    };
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${idToken}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload),
-      timeout: this.config.timeout
-    });
+    let fetchOptions;
+    if (isEdit) {
+      const formData = new FormData();
+      formData.append("prompt", prompt);
+      const imageBuffer = await this.processImageInput(imageUrl);
+      formData.append("image", imageBuffer, {
+        filename: "image.png",
+        contentType: "image/png"
+      });
+      for (const [key, value] of Object.entries(rest)) {
+        if (value !== undefined && value !== null) {
+          formData.append(key, String(value));
+        }
+      }
+      fetchOptions = {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          ...formData.getHeaders()
+        },
+        body: formData,
+        timeout: this.config.timeout
+      };
+    } else {
+      const payload = {
+        prompt: prompt,
+        ...rest
+      };
+      fetchOptions = {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload),
+        timeout: this.config.timeout
+      };
+    }
+    const res = await fetch(url, fetchOptions);
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       throw new Error(`API Error: ${res.status} - ${text}`);

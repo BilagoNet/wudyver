@@ -357,7 +357,7 @@ export default async function handler(req, res) {
     return res.status(400).json({
       error: "Missing required field: action",
       required: {
-        action: "search | detail | download"
+        action: "home | schedule | ongoing | finished | movie | search | detail | download"
       }
     });
   }
