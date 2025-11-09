@@ -1,6 +1,7 @@
 import axios from "axios";
 import crypto from "crypto";
 import FormData from "form-data";
+import Encoder from "@/lib/encoder";
 const genRandHash = () => {
   const hexChars = "0123456789abcdef";
   return Array.from({
@@ -26,6 +27,22 @@ class AIMirrorClient {
       "content-type": "application/json",
       "app-version": "6.8.4+179"
     };
+  }
+  async enc(data) {
+    const {
+      uuid: jsonUuid
+    } = await Encoder.enc({
+      data: data,
+      method: "combined"
+    });
+    return jsonUuid;
+  }
+  async dec(uuid) {
+    const decryptedJson = await Encoder.dec({
+      uuid: uuid,
+      method: "combined"
+    });
+    return decryptedJson.text;
   }
   l(processName, msg) {
     if (this._log) {
@@ -207,9 +224,17 @@ class AIMirrorClient {
       const reqId = generateRes.draw_request_id || generateRes.msg;
       if (!reqId) throw new Error("Failed to get draw_request_id from response.");
       this.l("generate", `Draw request ID: ${reqId}`);
+      const taskData = {
+        reqId: reqId,
+        uid: this._UID,
+        headers: this._HEADERS,
+        hash: this._hash,
+        imgKey: this._imageKey
+      };
+      const taskId = await this.enc(taskData);
+      console.log("Generation completed, task created");
       return {
-        task_id: reqId,
-        status: "PENDING"
+        task_id: taskId
       };
     } catch (error) {
       console.error(`\n[AIMirrorClient.generate] Final Error: ${error.message}`);
@@ -217,9 +242,28 @@ class AIMirrorClient {
     }
   }
   async status({
-    task_id: draw_request_id,
+    task_id,
     ...rest
   } = {}) {
+    if (!task_id) {
+      throw new Error("Task ID is required");
+    }
+    const taskData = await this.dec(task_id);
+    const {
+      reqId,
+      uid,
+      headers,
+      hash,
+      imgKey
+    } = taskData;
+    if (!reqId || !uid || !headers) {
+      throw new Error("Invalid task data");
+    }
+    this._UID = uid;
+    this._hash = hash;
+    this._imageKey = imgKey;
+    this._HEADERS = headers;
+    const draw_request_id = reqId;
     if (!draw_request_id) throw new Error("task_id (draw_request_id) is required for status check.");
     this.l("status", `Checking status for Task ID: ${draw_request_id}`);
     try {
