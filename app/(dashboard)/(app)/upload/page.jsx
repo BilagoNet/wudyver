@@ -1,7 +1,7 @@
 "use client";
 
 import SimpleBar from "simplebar-react";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Fileinput from "@/components/ui/Fileinput";
@@ -9,283 +9,195 @@ import { ToastContainer, toast } from "react-toastify";
 import { Icon } from '@iconify/react';
 import axios from 'axios';
 
-// === Konfigurasi ===
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
-const SUPPORTED_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|mp4|webm|mp3|wav|pdf|zip|rar|txt|doc|docx)$/i;
-const ALLOWED_TYPES = [
-  'image/', 'video/', 'audio/', 'application/pdf',
-  'text/', 'application/zip', 'application/x-rar-compressed'
-];
-
 const UploaderPage = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hostLoading, setHostLoading] = useState(true);
-  const [selectedHost, setSelectedHost] = useState('');
+  const [selectedHost, setSelectedHost] = useState('Catbox');
   const [availableHosts, setAvailableHosts] = useState([]);
   const [uploadResults, setUploadResults] = useState([]);
   const [showJsonResponse, setShowJsonResponse] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({});
 
-  // Ref untuk kontrol abort & lifecycle
-  const cancelTokens = useRef(new Map());
-  const isMounted = useRef(true);
-
-  // Cleanup saat komponen di-unmount
-  useEffect(() => {
-    return () => {
-      isMounted.current = false;
-      cancelTokens.current.forEach(token => token.cancel('Komponen dibongkar'));
-      cancelTokens.current.clear();
-    };
-  }, []);
-
-  // === Ambil daftar host ===
   useEffect(() => {
     const fetchHosts = async () => {
       setHostLoading(true);
       try {
         const response = await axios.get('/api/tools/upload');
-        const hosts = response.data.hosts || [];
-        if (isMounted.current) {
-          setAvailableHosts(hosts);
-          if (hosts.length > 0) {
-            setSelectedHost(hosts[0]);
-          }
+        setAvailableHosts(response.data.hosts);
+        if (response.data.hosts.length > 0) {
+          setSelectedHost(response.data.hosts[0]);
         }
       } catch (error) {
-        if (axios.isCancel(error)) return;
-        console.error('Gagal mengambil host:', error);
-        toast.error('Gagal memuat host. Coba refresh halaman.');
+        console.error('Gagal mengambil daftar host:', error);
+        toast.error('Gagal memuat daftar host. Silakan coba lagi.');
       } finally {
-        if (isMounted.current) setHostLoading(false);
+        setHostLoading(false);
       }
     };
     fetchHosts();
   }, []);
 
-  // === Validasi file ===
-  const validateFile = (file) => {
-    if (file.size > MAX_FILE_SIZE) {
-      return { valid: false, error: `Ukuran maksimal 100MB. File: ${file.name}` };
-    }
-    if (!SUPPORTED_EXTENSIONS.test(file.name)) {
-      return { valid: false, error: `Format tidak didukung: ${file.name}` };
-    }
-    const typePrefix = file.type.split('/')[0] + '/';
-    if (!ALLOWED_TYPES.some(type => file.type.startsWith(type))) {
-      return { valid: false, error: `Tipe file tidak diizinkan: ${file.type}` };
-    }
-    return { valid: true };
-  };
-
-  // === Handler pilih file ===
   const handleFileChange = useCallback((e) => {
-    const newFiles = Array.from(e.target.files || []);
+    const newFiles = Array.from(e.target.files);
+    
     if (newFiles.length === 0) return;
 
-    const existingKeys = new Set(
-      selectedFiles.map(f => `${f.name}-${f.size}-${f.lastModified}`)
-    );
-    const validNewFiles = [];
-    const errors = [];
-
-    newFiles.forEach(file => {
-      const key = `${file.name}-${file.size}-${file.lastModified}`;
-      if (existingKeys.has(key)) return;
-
-      const validation = validateFile(file);
-      if (!validation.valid) {
-        errors.push(validation.error);
-        return;
-      }
-
-      validNewFiles.push(file);
-      existingKeys.add(key);
+    // Check for duplicate files based on name and size
+    const existingFileKeys = selectedFiles.map(file => `${file.name}-${file.size}`);
+    const uniqueNewFiles = newFiles.filter(file => {
+      const fileKey = `${file.name}-${file.size}`;
+      return !existingFileKeys.includes(fileKey);
     });
 
-    if (validNewFiles.length > 0) {
-      setSelectedFiles(prev => [...prev, ...validNewFiles]);
-      toast.success(`${validNewFiles.length} file ditambahkan!`);
+    if (uniqueNewFiles.length === 0) {
+      toast.warn("Semua file yang dipilih sudah ada dalam daftar!");
+      return;
     }
 
-    errors.forEach(err => toast.warn(err));
+    // Add unique files to existing selection
+    setSelectedFiles(prev => [...prev, ...uniqueNewFiles]);
+    
+    // Show success message
+    const duplicateCount = newFiles.length - uniqueNewFiles.length;
+    toast.success(
+      `${uniqueNewFiles.length} file ditambahkan!${
+        duplicateCount > 0 ? ` (${duplicateCount} file duplikat diabaikan)` : ''
+      }`
+    );
 
-    if (validNewFiles.length === 0 && errors.length === 0) {
-      toast.info("Tidak ada file baru yang valid.");
-    }
-
+    // Clear the input value so the same files can be selected again if needed
     e.target.value = '';
   }, [selectedFiles]);
 
-  // === Hapus file ===
-  const removeFile = useCallback((index) => {
-    const file = selectedFiles[index];
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-    setUploadProgress(prev => {
-      const { [file.name]: _, ...rest } = prev;
-      return rest;
-    });
-    toast.info(`${file.name} dihapus`);
-  }, [selectedFiles]);
+  const removeFile = useCallback((indexToRemove) => {
+    setSelectedFiles(prev => prev.filter((_, index) => index !== indexToRemove));
+    toast.info("File dihapus dari daftar");
+  }, []);
 
-  // === Bersihkan semua ===
-  const clearFiles = () => {
-    setSelectedFiles([]);
-    setUploadResults([]);
-    setUploadProgress({});
-    cancelTokens.current.forEach(token => token.cancel('Dibatalkan pengguna'));
-    cancelTokens.current.clear();
-    toast.info("Daftar dibersihkan");
-  };
-
-  // === Upload file ===
   const handleUpload = async (e) => {
     e.preventDefault();
+
     if (selectedFiles.length === 0) {
-      toast.warn("Pilih file dulu!");
+      toast.warn("Mohon pilih file untuk diunggah!");
       return;
     }
 
     setLoading(true);
+    const results = [];
+    const totalFiles = selectedFiles.length;
+
+    try {
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+
+        setUploadProgress(prev => ({
+          ...prev,
+          [file.name]: { status: 'mengunggah', progress: 0 }
+        }));
+
+        try {
+          const formData = new FormData();
+          formData.append('file', file);
+
+          const response = await axios.post(`/api/tools/upload?host=${selectedHost}`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+            onUploadProgress: (progressEvent) => {
+              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              setUploadProgress(prev => ({
+                ...prev,
+                [file.name]: { status: 'mengunggah', progress: percentCompleted }
+              }));
+            }
+          });
+
+          const result = {
+            fileName: file.name,
+            fileSize: (file.size / 1024).toFixed(2) + ' KB',
+            url: response.data.result,
+            success: true,
+            rawResponse: response.data,
+            timestamp: new Date().toLocaleString()
+          };
+
+          results.push(result);
+
+          setUploadProgress(prev => ({
+            ...prev,
+            [file.name]: { status: 'berhasil', progress: 100 }
+          }));
+
+          toast.success(`${file.name} berhasil diunggah! (${i + 1}/${totalFiles})`);
+        } catch (fileError) {
+          const errorResult = {
+            fileName: file.name,
+            fileSize: (file.size / 1024).toFixed(2) + ' KB',
+            error: fileError.response?.data?.error || fileError.message,
+            success: false,
+            rawResponse: fileError.response?.data || { error: fileError.message },
+            timestamp: new Date().toLocaleString()
+          };
+
+          results.push(errorResult);
+
+          setUploadProgress(prev => ({
+            ...prev,
+            [file.name]: { status: 'gagal', progress: 0 }
+          }));
+
+          toast.error(`${file.name} gagal diunggah: ${errorResult.error}`);
+        }
+      }
+
+      setUploadResults(results);
+
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.length - successCount;
+
+      if (successCount > 0) {
+        toast.success(`Unggah selesai! ${successCount} berhasil${failCount > 0 ? `, ${failCount} gagal` : ''}`);
+      }
+    } catch (error) {
+      console.error('Kesalahan unggah:', error);
+      toast.error(`Unggah gagal: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = (text, type = 'URL') => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${type} berhasil disalin ke clipboard!`);
+  };
+
+  const clearFiles = () => {
+    setSelectedFiles([]);
     setUploadResults([]);
     setUploadProgress({});
-
-    const results = [];
-
-    for (let i = 0; i < selectedFiles.length; i++) {
-      if (!isMounted.current) break;
-
-      const file = selectedFiles[i];
-      const fileKey = `${file.name}-${file.size}-${file.lastModified}`;
-
-      // Inisialisasi progress
-      setUploadProgress(prev => ({
-        ...prev,
-        [fileKey]: { status: 'mengunggah', progress: 0 }
-      }));
-
-      const source = axios.CancelToken.source();
-      cancelTokens.current.set(fileKey, source);
-
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await axios.post(
-          `/api/tools/upload?host=${selectedHost}`,
-          formData,
-          {
-            headers: { 'Content-Type': 'multipart/form-data' },
-            cancelToken: source.token,
-            timeout: 300000,
-            onUploadProgress: (progressEvent) => {
-              if (progressEvent.total) {
-                const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                setUploadProgress(prev => ({
-                  ...prev,
-                  [fileKey]: { ...prev[fileKey], progress: percent }
-                }));
-              }
-            }
-          }
-        );
-
-        const result = {
-          fileName: file.name,
-          fileSize: formatFileSize(file.size),
-          url: response.data.result,
-          success: true,
-          rawResponse: response.data,
-          timestamp: new Date().toLocaleString('id-ID')
-        };
-
-        results.push(result);
-        setUploadProgress(prev => ({
-          ...prev,
-          [fileKey]: { status: 'berhasil', progress: 100 }
-        }));
-
-        toast.success(`${file.name} berhasil! (${i + 1}/${selectedFiles.length})`);
-      } catch (error) {
-        let errorMsg = 'Gagal mengunggah';
-        let rawResponse = { error: error.message };
-
-        if (axios.isCancel(error)) {
-          errorMsg = 'Dibatalkan';
-          rawResponse = { error: 'Upload dibatalkan' };
-        } else if (error.response?.data?.error) {
-          errorMsg = error.response.data.error;
-          rawResponse = error.response.data;
-        } else if (error.message) {
-          errorMsg = error.message;
-        }
-
-        const result = {
-          fileName: file.name,
-          fileSize: formatFileSize(file.size),
-          error: errorMsg,
-          success: false,
-          rawResponse,
-          timestamp: new Date().toLocaleString('id-ID')
-        };
-
-        results.push(result);
-        setUploadProgress(prev => ({
-          ...prev,
-          [fileKey]: { status: axios.isCancel(error) ? 'dibatalkan' : 'gagal', progress: 0 }
-        }));
-
-        toast.error(`${file.name}: ${errorMsg}`);
-      } finally {
-        cancelTokens.current.delete(fileKey);
-      }
-    }
-
-    if (isMounted.current) {
-      setUploadResults(results);
-      const success = results.filter(r => r.success).length;
-      toast.success(`Selesai: ${success} berhasil${results.length - success > 0 ? `, ${results.length - success} gagal` : ''}`);
-    }
-
-    setLoading(false);
   };
 
-  // === Salin ke clipboard ===
-  const copyToClipboard = (text, label = 'URL') => {
-    navigator.clipboard.writeText(text)
-      .then(() => toast.success(`${label} disalin!`))
-      .catch(() => toast.error('Gagal menyalin'));
-  };
-
-  // === Unduh semua URL ===
   const downloadAllUrls = () => {
-    const urls = uploadResults
-      .filter(r => r.success)
-      .map(r => r.url)
-      .join('\n');
-
+    const successResults = uploadResults.filter(r => r.success);
+    const urls = successResults.map(r => r.url).join('\n');
     const blob = new Blob([urls], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
+    const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `upload-urls-${new Date().toISOString().slice(0,10)}.txt`;
-    document.body.appendChild(a);
+    a.download = 'upload-urls.txt';
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    window.URL.revokeObjectURL(url);
   };
 
-  // === Format ukuran file ===
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) return '0 Bytes';
     const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // === Render ===
   return (
     <>
       <div className="w-full px-2 sm:px-4 py-6">
@@ -294,12 +206,17 @@ const UploaderPage = () => {
           autoClose={3000}
           newestOnTop
           theme="colored"
-          toastClassName="text-sm p-3 m-2 rounded-lg shadow-md"
+          toastClassName={(options) =>
+            `relative flex p-1 min-h-10 rounded-md justify-between overflow-hidden cursor-pointer
+            ${options?.type === 'success' ? 'bg-emerald-500 text-white' :
+              options?.type === 'error' ? 'bg-red-500 text-white' :
+              options?.type === 'warn' ? 'bg-yellow-500 text-white' :
+              'bg-sky-500 text-white'} dark:text-slate-100 text-sm p-3 m-2 rounded-lg shadow-md`
+          }
         />
-
         <Card
           bodyClass="relative p-0 h-full overflow-hidden"
-          className="w-full border border-teal-500/50 dark:border-teal-600/70 rounded-xl shadow-lg bg-white/80 dark:bg-slate-800/50 backdrop-blur-sm"
+          className="w-full border border-teal-500/50 dark:border-teal-600/70 rounded-xl shadow-lg bg-white text-slate-800 dark:bg-slate-800/50 dark:text-slate-100 backdrop-blur-sm bg-opacity-80 dark:bg-opacity-80"
         >
           <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700/60">
             <div className="flex flex-col sm:flex-row items-center">
@@ -311,102 +228,102 @@ const UploaderPage = () => {
               </h1>
             </div>
             <p className="text-sm text-center sm:text-left text-slate-500 dark:text-slate-400 mt-2 ml-0 sm:ml-[calc(2.5rem+1rem)] md:ml-[calc(3rem+1rem)]">
-              Unggah banyak file sekaligus dan dapatkan tautan langsung.
+              Unggah banyak file ke berbagai penyedia hosting dan dapatkan tautan langsung.
             </p>
           </div>
 
           <SimpleBar className="max-h-[calc(100vh-230px)]">
             <div className="p-4 sm:p-6 space-y-6">
-              <form onSubmit={handleUpload} className="space-y-5">
+              <form onSubmit={handleUpload} className="space-y-4 sm:space-y-5">
                 {/* Host Selection */}
                 <div className="bg-slate-100/70 dark:bg-slate-800/40 p-4 sm:p-5 rounded-lg border border-slate-200 dark:border-slate-700/60">
-                  <label htmlFor="hostSelect" className="block text-sm font-medium text-teal-700 dark:text-teal-300 mb-2 flex items-center">
+                  <label htmlFor="hostSelect" className="block text-sm sm:text-base font-medium text-teal-700 dark:text-teal-300 mb-2 flex items-center">
                     <Icon icon="ph:globe-stand-bold" className="mr-2 text-xl" />
                     Pilih Penyedia Hosting
                   </label>
                   {hostLoading ? (
-                    <div className="flex items-center p-3 bg-white dark:bg-slate-700/80 rounded border">
-                      <Icon icon="ph:spinner-gap-bold" className="animate-spin mr-2" />
+                    <div className="w-full bg-white dark:bg-slate-700/80 border border-slate-300 dark:border-slate-600/80 text-slate-900 dark:text-slate-200 rounded-md text-sm p-3 flex items-center">
+                      <Icon icon="ph:spinner-gap-bold" className="animate-spin mr-2 text-lg" />
                       Memuat host...
                     </div>
                   ) : (
                     <select
                       id="hostSelect"
                       value={selectedHost}
-                      onDChange={(e) => setSelectedHost(e.target.value)}
-                      disabled={loading}
-                      className="w-full p-3 rounded-md border focus:ring-1 focus:ring-teal-500 dark:bg-slate-700/80 dark:border-slate-600"
+                      onChange={(e) => setSelectedHost(e.target.value)}
+                      disabled={loading || hostLoading}
+                      className="w-full bg-white dark:bg-slate-700/80 border border-slate-300 dark:border-slate-600/80 text-slate-900 dark:text-slate-200 rounded-md focus:ring-1 focus:ring-teal-500 focus:border-teal-500 text-sm p-3"
                     >
-                      {availableHosts.map(host => (
-                        <option key={host} value={host}>{host}</option>
+                      {availableHosts.map((host) => (
+                        <option key={host} value={host}>
+                          {host}
+                        </option>
                       ))}
                     </select>
                   )}
                 </div>
 
-                {/* File Input */}
-                <div className="bg-slate-100/70 dark:bg-slate-800/40 p-4 sm:p-5 rounded-lg border">
-                  <label className="block text-sm font-medium text-teal-700 dark:text-teal-300 mb-2 flex items-center">
+                {/* File Selection */}
+                <div className="bg-slate-100/70 dark:bg-slate-800/40 p-4 sm:p-5 rounded-lg border border-slate-200 dark:border-slate-700/60">
+                  <label htmlFor="fileInput" className="block text-sm sm:text-base font-medium text-teal-700 dark:text-teal-300 mb-2 flex items-center">
                     <Icon icon="ph:folder-fill" className="mr-2 text-xl" />
                     Pilih File (Banyak)
                   </label>
                   <Fileinput
                     id="fileInput"
-                    name="files"
+                    name="fileUpload"
                     multiple
-                    selectedFiles={[]}
+                    selectedFiles={[]} // Always show empty to allow continuous selection
                     onChange={handleFileChange}
                     disabled={loading}
-                    preview={false}
+                    preview={false} // Disable preview since we'll show our own list
                     className="w-full"
                   />
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    Maks: 100MB/file. Format: gambar, video, audio, PDF, ZIP, dll.
-                  </p>
-
+                  <div className="mt-3 text-xs text-slate-500 dark:text-slate-400 flex items-center">
+                    <Icon icon="ph:info-bold" className="mr-1" />
+                    Pilih file satu per satu atau sekaligus. File akan ditambahkan ke daftar yang sudah ada.
+                  </div>
+                  
                   {selectedFiles.length > 0 && (
-                    <div className="mt-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">
-                          {selectedFiles.length} file
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600 dark:text-slate-400 flex items-center">
+                          <Icon icon="ph:file-image-bold" className="mr-1 text-base" />
+                          {selectedFiles.length} file dipilih
                         </span>
                         <Button
-                          text="Bersihkan"
+                          text="Bersihkan Semua"
+                          className="text-xs px-3 py-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-600 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded flex items-center"
                           onClick={clearFiles}
                           disabled={loading}
-                          className="text-xs px-3 py-1"
                           type="button"
                         />
                       </div>
+
+                      {/* Enhanced File List Preview */}
                       <div className="max-h-40 overflow-y-auto space-y-1">
-                        {selectedFiles.map((file, i) => {
-                          const key = `${file.name}-${file.size}-${file.lastModified}`;
-                          const progress = uploadProgress[key];
-                          return (
-                            <div key={i} className="flex items-center justify-between text-xs bg-white dark:bg-slate-700/50 p-2 rounded border">
-                              <div className="flex items-center flex-1 min-w-0">
-                                <Icon icon="ph:file-text-bold" className="mr-2 text-slate-500 flex-shrink-0" />
-                                <span className="truncate">{file.name}</span>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-slate-500">{formatFileSize(file.size)}</span>
-                                {progress && (
-                                  <span className={`text-xs font-medium ${progress.status === 'berhasil' ? 'text-green-600' : progress.status === 'gagal' ? 'text-red-600' : 'text-blue-600'}`}>
-                                    {progress.progress}%
-                                  </span>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => removeFile(i)}
-                                  disabled={loading}
-                                  className="p-1 hover:bg-red-100 dark:hover:bg-red-800/30 rounded text-red-500"
-                                >
-                                  <Icon icon="ph:x-bold" className="text-xs" />
-                                </button>
-                              </div>
+                        {selectedFiles.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between text-xs bg-white dark:bg-slate-700/50 p-2 rounded border">
+                            <div className="flex items-center min-w-0 flex-1">
+                              <Icon icon="ph:file-text-bold" className="mr-2 text-slate-500 flex-shrink-0" />
+                              <span className="truncate text-slate-700 dark:text-slate-300">{file.name}</span>
                             </div>
-                          );
-                        })}
+                            <div className="flex items-center space-x-2 flex-shrink-0">
+                              <span className="text-slate-500 dark:text-slate-400">
+                                {formatFileSize(file.size)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => removeFile(index)}
+                                disabled={loading}
+                                className="p-1 hover:bg-red-100 dark:hover:bg-red-800/30 rounded text-red-500 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+                                title="Hapus file"
+                              >
+                                <Icon icon="ph:x-bold" className="text-xs" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -415,128 +332,196 @@ const UploaderPage = () => {
                 <Button
                   text={
                     loading ? (
-                      <span className="flex items-center">
-                        <Icon icon="ph:spinner-gap-bold" className="animate-spin mr-2" />
+                      <span className="flex items-center justify-center">
+                        <Icon icon="ph:spinner-gap-bold" className="animate-spin mr-2 text-lg" />
                         Mengunggah...
                       </span>
                     ) : (
-                      <span className="flex items-center">
-                        <Icon icon="ph:upload-bold" className="mr-1.5" />
-                        Unggah {selectedFiles.length} File
+                      <span className="flex items-center justify-center">
+                        <Icon icon="ph:upload-bold" className="mr-1.5 text-lg" />
+                        Unggah {selectedFiles.length > 0 ? `${selectedFiles.length} File` : 'File'}
                       </span>
                     )
                   }
-                  className="w-full py-2.5 text-sm font-semibold bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white rounded-md shadow-md disabled:opacity-70"
+                  className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-semibold rounded-md shadow-md hover:shadow-lg transition duration-300 py-2.5 text-sm flex items-center justify-center disabled:opacity-70"
                   disabled={loading || selectedFiles.length === 0 || hostLoading}
                   type="submit"
                 />
               </form>
 
-              {/* Progress Upload */}
-              {loading && Object.keys(uploadProgress).length > 0 && (
-                <div className="mt-6 space-y-3">
-                  {selectedFiles.map((file, i) => {
-                    const key = `${file.name}-${file.size}-${file.lastModified}`;
-                    const progress = uploadProgress[key] || { progress: 0, status: 'mengunggah' };
-                    return (
-                      <div key={i} className="bg-white dark:bg-slate-700/50 p-3 rounded-lg border">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm font-medium truncate flex-1">{file.name}</span>
+              {/* Loading State with Progress */}
+              {loading && (
+                <div className="mt-6 space-y-4">
+                  <div className="flex flex-col items-center justify-center p-6 bg-slate-100/70 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-700/60 shadow">
+                    <Icon icon="ph:cloud-arrow-up-bold" className="text-4xl text-teal-500 mb-3 animate-pulse" />
+                    <p className="text-sm text-slate-600 dark:text-teal-300">Sedang mengunggah {selectedFiles.length} file...</p>
+                  </div>
+
+                  {/* Progress for each file */}
+                  <div className="space-y-2">
+                    {Object.entries(uploadProgress).map(([fileName, progress]) => (
+                      <div key={fileName} className="bg-white dark:bg-slate-700/50 p-3 rounded-lg border border-slate-200 dark:border-slate-600/50">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate flex-1">{fileName}</span>
                           <Icon
                             icon={
+                              progress.status === 'mengunggah' ? "ph:spinner-gap-bold" :
                               progress.status === 'berhasil' ? "ph:check-circle-bold" :
-                              progress.status === 'gagal' ? "ph:x-circle-bold" :
-                              progress.status === 'dibatalkan' ? "ph:prohibit-bold" :
-                              "ph:spinner-gap-bold"
+                              "ph:x-circle-bold"
                             }
-                            className={`ml-2 text-sm ${
-                              progress.status === 'mengunggah' ? 'animate-spin text-blue-500' :
+                            className={`text-sm ml-2 ${
+                              progress.status === 'mengunggah' ? 'text-blue-500 animate-spin' :
                               progress.status === 'berhasil' ? 'text-green-500' :
-                              progress.status === 'dibatalkan' ? 'text-orange-500' :
                               'text-red-500'
                             }`}
                           />
                         </div>
                         <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2">
                           <div
-                            className={`h-2 rounded-full transition-all ${
+                            className={`h-2 rounded-full transition-all duration-300 ${
                               progress.status === 'berhasil' ? 'bg-green-500' :
-                              progress.status === 'gagal' || progress.status === 'dibatalkan' ? 'bg-red-500' :
+                              progress.status === 'gagal' ? 'bg-red-500' :
                               'bg-blue-500'
                             }`}
                             style={{ width: `${progress.progress}%` }}
-                          />
+                          ></div>
                         </div>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {/* Hasil Upload */}
+              {/* Upload Results */}
               {uploadResults.length > 0 && !loading && (
                 <div className="mt-6 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-teal-700 dark:text-teal-300">
-                      Hasil ({uploadResults.length})
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-teal-700 dark:text-teal-300 flex items-center">
+                      <Icon icon="ph:receipt-bold" className="mr-2 text-xl" />
+                      Hasil Unggah ({uploadResults.length})
                     </h3>
-                    <div className="flex gap-2">
+                    <div className="flex items-center space-x-2">
                       <Button
-                        text={showJsonResponse ? "Sembunyikan JSON" : "JSON"}
+                        text={
+                          <span className="flex items-center">
+                            <Icon icon="ph:code-bold" className="mr-1 text-sm" />
+                            {showJsonResponse ? 'Sembunyikan JSON' : 'Tampilkan JSON'}
+                          </span>
+                        }
+                        className="text-xs px-3 py-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-600 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded"
                         onClick={() => setShowJsonResponse(!showJsonResponse)}
-                        className="text-xs px-3 py-1"
                         type="button"
                       />
                       {uploadResults.some(r => r.success) && (
                         <Button
-                          text="Unduh URL"
+                          text={
+                            <span className="flex items-center">
+                              <Icon icon="ph:download-bold" className="mr-1 text-sm" />
+                              Unduh URL
+                            </span>
+                          }
+                          className="text-xs px-3 py-1 bg-teal-200 hover:bg-teal-300 dark:bg-teal-600 dark:hover:bg-teal-700 text-teal-700 dark:text-teal-200 rounded"
                           onClick={downloadAllUrls}
-                          className="text-xs px-3 py-1 bg-teal-600 text-white"
                           type="button"
                         />
                       )}
                     </div>
                   </div>
 
-                  {uploadResults.map((r, i) => (
-                    <div key={i} className={`p-4 rounded-lg border ${r.success ? 'bg-emerald-50 border-emerald-300 dark:bg-emerald-500/20 dark:border-emerald-500/50' : 'bg-red-50 border-red-300 dark:bg-red-500/20 dark:border-red-500/50'}`}>
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Icon icon={r.success ? "ph:check-circle-bold" : "ph:warning-circle-bold"} className={`text-xl ${r.success ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} />
-                            <span className={`font-medium text-sm ${r.success ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>{r.fileName}</span>
-                          </div>
-                          <div className="text-xs text-slate-500 dark:text-slate-400 space-x-3">
-                            <span>{r.fileSize}</span>
-                            <span>{r.timestamp}</span>
-                          </div>
-                          {r.success ? (
-                            <a href={r.url} target="_blank" rel="noopener noreferrer" className="block mt-2 text-sm text-emerald-600 dark:text-emerald-400 hover:underline break-all">
-                              {r.url}
-                            </a>
-                          ) : (
-                            <p className="mt-2 text-sm text-red-600 dark:text-red-400">{r.error}</p>
-                          )}
-                          {showJsonResponse && (
-                            <div className="mt-3 p-3 bg-slate-800 dark:bg-slate-900 rounded text-xs text-green-400 dark:text-green-300 font-mono overflow-x-auto">
-                              <div className="flex justify-between mb-2">
-                                <span className="text-slate-400">Respons:</span>
-                                <Button
-                                  text={<Icon icon="ph:copy-bold" className="text-sm" />}
-                                  onClick={() => copyToClipboard(JSON.stringify(r.rawResponse, null, 2), r.success ? 'JSON' : 'Error')}
-                                  className="p-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded"
-                                  type="button"
-                                />
+                  {uploadResults.map((result, index) => (
+                    <div
+                      key={index}
+                      className={`p-4 rounded-lg border ${
+                        result.success
+                          ? 'bg-emerald-100 dark:bg-emerald-500/20 border-emerald-300 dark:border-emerald-500/50'
+                          : 'bg-red-100 dark:bg-red-500/20 border-red-300 dark:border-red-500/50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center mb-2">
+                            <Icon
+                              icon={result.success ? "ph:check-circle-bold" : "ph:warning-circle-bold"}
+                              className={`text-xl mr-2 ${
+                                result.success ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                              }`}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <span className={`font-medium text-sm ${
+                                result.success ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'
+                              }`}>
+                                {result.fileName}
+                              </span>
+                              <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 mt-1 space-x-3">
+                                <span className="flex items-center">
+                                  <Icon icon="ph:stack-bold" className="mr-1" />
+                                  {result.fileSize}
+                                </span>
+                                <span className="flex items-center">
+                                  <Icon icon="ph:clock-bold" className="mr-1" />
+                                  {result.timestamp}
+                                </span>
                               </div>
-                              <pre>{JSON.stringify(r.rawResponse, null, 2)}</pre>
+                            </div>
+                          </div>
+
+                          {result.success ? (
+                            <div className="ml-7 space-y-2">
+                              <a
+                                href={result.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline break-all flex items-center"
+                              >
+                                <Icon icon="ph:link-bold" className="mr-1 text-base flex-shrink-0" />
+                                {result.url}
+                              </a>
+
+                              {showJsonResponse && (
+                                <div className="mt-3 p-3 bg-slate-800 dark:bg-slate-900 rounded text-xs text-green-400 font-mono overflow-x-auto">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-slate-400">Respons JSON Mentah:</span>
+                                    <Button
+                                      text={<Icon icon="ph:copy-bold" className="text-sm" />}
+                                      className="p-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded"
+                                      onClick={() => copyToClipboard(JSON.stringify(result.rawResponse, null, 2), 'Respons JSON')}
+                                      type="button"
+                                    />
+                                  </div>
+                                  <pre>{JSON.stringify(result.rawResponse, null, 2)}</pre>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="ml-7 space-y-2">
+                              <p className="text-sm text-red-600 dark:text-red-400 flex items-center">
+                                <Icon icon="ph:warning-bold" className="mr-1 text-base flex-shrink-0" />
+                                {result.error}
+                              </p>
+
+                              {showJsonResponse && (
+                                <div className="mt-3 p-3 bg-slate-800 dark:bg-slate-900 rounded text-xs text-red-400 font-mono overflow-x-auto">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-slate-400">Respons Error Mentah:</span>
+                                    <Button
+                                      text={<Icon icon="ph:copy-bold" className="text-sm" />}
+                                      className="p-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded"
+                                      onClick={() => copyToClipboard(JSON.stringify(result.rawResponse, null, 2), 'Respons Error')}
+                                      type="button"
+                                    />
+                                  </div>
+                                  <pre>{JSON.stringify(result.rawResponse, null, 2)}</pre>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
-                        {r.success && (
+
+                        {result.success && (
                           <Button
-                            text={<Icon icon="ph:copy-bold" />}
-                            onClick={() => copyToClipboard(r.url)}
-                            className="ml-3 p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded"
+                            text={<Icon icon="ph:copy-bold" className="text-lg" />}
+                            className="ml-3 p-2 bg-emerald-200 hover:bg-emerald-300 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-emerald-700 dark:text-emerald-200 rounded"
+                            onClick={() => copyToClipboard(result.url)}
                             type="button"
                           />
                         )}
@@ -546,14 +531,17 @@ const UploaderPage = () => {
                 </div>
               )}
 
-              {/* Info Box */}
-              <div className="flex items-start p-3 bg-teal-50 dark:bg-teal-800/30 rounded-lg border border-teal-200 dark:border-teal-700/50 text-sm text-teal-700 dark:text-teal-300">
-                <Icon icon="ph:info-bold" className="mr-3 mt-0.5 flex-shrink-0" />
-                <div className="space-y-1">
-                  <p>• Maksimal 100MB per file</p>
-                  <p>• Dukungan gambar, video, audio, PDF, ZIP, dll</p>
-                  <p>• Upload bisa dibatalkan & dipantau progressnya</p>
-                  <p>• Hasil bisa diunduh sebagai file teks</p>
+              {/* Enhanced Info Box */}
+              <div className="flex items-start p-3 bg-teal-50 dark:bg-teal-800/30 rounded-lg border border-teal-200 dark:border-teal-700/50">
+                <div className="w-8 h-8 flex items-center justify-center rounded-full bg-teal-100 dark:bg-teal-700/50 text-teal-600 dark:text-teal-300 mr-3 flex-shrink-0">
+                  <Icon icon="ph:info-bold" className="text-lg" />
+                </div>
+                <div className="text-sm text-teal-700 dark:text-teal-300 pt-0.5 space-y-1">
+                  <p>• Pilih file satu per satu atau sekaligus - file akan ditambahkan ke daftar</p>
+                  <p>• Hapus file individual dengan tombol X di sebelah nama file</p>
+                  <p>• Sistem otomatis mencegah duplikasi file berdasarkan nama dan ukuran</p>
+                  <p>• Lihat respons JSON mentah untuk debugging</p>
+                  <p>• Unduh semua URL hasil unggah sebagai file teks</p>
                 </div>
               </div>
             </div>

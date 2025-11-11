@@ -1,10 +1,8 @@
 import fetch from "node-fetch";
 import https from "https";
-import CryptoJS from "crypto-js";
-import apiConfig from "@/configs/apiConfig";
 class OpenAITTS {
   constructor({
-    apiKey = "U2FsdGVkX19MQCKHkGg5TRiFQQgXa0UXBdCD9KU6jbwUB10BnMgwKvZAgu6RWpipG+DEEPxOg0+SWi3i5ZpT8liWsNJ4F0C5+kmaENvzrvrRKa8FN5dInfwYD8OllUWjzQaeS5JWvIL4yF/9qHKG4+NESHPVT0ywBqRYMMfsfBLTl00yCkiV8WNeHL+uTL3TR+jvT8ujngYS142Kvm7WINV2qvw1EEoaTDo11KyF9tayGHVcLUwviWM1Lpifn3QH",
+    apiKey = "c2stcHJvai05U2h3bTZYbXk1dGJaX0VjQzVWbjFhb3k2RTFDV1FYQ0pWVGZLOS1LS1BhcTk1RVVmcDIxaEY5SWFoaHE2QzV5dDN6d1hrMVkwVFQzQmxia0ZKY1BLWmxGR3daWTdZWXhYSU9yMktpRmpPRVpfSWZISUxWNHAzOGhMR3FaLWEybTVXOVFyaEpHTkthbjNzMWlCN2JmS3dXRnhla0E",
     model = "tts-1",
     voice = "alloy"
   } = {}) {
@@ -16,11 +14,12 @@ class OpenAITTS {
       rejectUnauthorized: false
     });
   }
-  decode(teksTerenkripsi) {
-    const bytes = CryptoJS.AES.decrypt(teksTerenkripsi, apiConfig.PASSWORD);
-    const teksAsli = bytes.toString(CryptoJS.enc.Utf8);
-    if (!teksAsli) throw new Error("Dekripsi gagal");
-    return teksAsli;
+  decode(str) {
+    try {
+      return JSON.parse(Buffer.from(str, "base64").toString());
+    } catch {
+      return Buffer.from(str, "base64").toString();
+    }
   }
   async generate({
     text,

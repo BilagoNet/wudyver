@@ -145,7 +145,6 @@ export default async function handler(req, res) {
     const api = new LogoScraper();
     const result = await api.generate(params);
     res.setHeader("Content-Type", "image/png");
-    res.setHeader("Content-Disposition", 'inline; filename="generated_image.png"');
     return res.status(200).send(result);
   } catch (error) {
     console.error("Terjadi kesalahan di handler API:", error.message);

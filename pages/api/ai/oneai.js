@@ -1,8 +1,7 @@
 import fetch from "node-fetch";
-import CryptoJS from "crypto-js";
 class AIClient {
   constructor() {
-    this.apiKey = this.decode("U2FsdGVkX1/SoSPQlq/U//QXJGHMMva02T7/5yGzdJvtqCy/TVCWVLwE27kS+C24ZFptaj/iOhNvPOJ4ittBVZkuaTFOshio9w8RWNxxlUEB35DKsXLYzkLaho4pE97y6dqBo8vAgwexEGB3o21ebdlUKTXRV0AD4x+LqaQsGN9jxl+0mhrKkOrvydlBgm0h3P/aVDlnKtIhVX9Maw1QjINB3BMjyGqCfVvYS9k5JQLJ4013Syxv1ToH/tZ6HoYo");
+    this.apiKey = this.decode("c2stcHJvai1DRDhzVzU1djdaNlBNdjR3QTlfVWxFZXk5X1hiaWMtTkktRFhZQlZGdmRzUEFMdFBkV05TdllraGpKWU1MaUtRSnIycEhneXR2ZFQzQmxia0ZKSXM2U0taTEhEZEhHbUZuRWF6enVJYzhTR2ZjeGVKM0Q4U2dJMWp4RjlHZTNYdUc4bWVveXhRR3E1TVJzM0kyMEZyWS0wX0MwTUE");
     this.baseUrl = "https://api.openai.com/v1";
     this.endpoints = {
       chat: "/chat/completions",
@@ -25,11 +24,12 @@ class AIClient {
       }
     };
   }
-  decode(teksTerenkripsi) {
-    const bytes = CryptoJS.AES.decrypt(teksTerenkripsi, apiConfig.PASSWORD);
-    const teksAsli = bytes.toString(CryptoJS.enc.Utf8);
-    if (!teksAsli) throw new Error("Dekripsi gagal");
-    return teksAsli;
+  decode(str) {
+    try {
+      return JSON.parse(Buffer.from(str, "base64").toString());
+    } catch {
+      return Buffer.from(str, "base64").toString();
+    }
   }
   async req(url, options) {
     console.log(`[LOG] → ${options.method} ${url}`);

@@ -385,7 +385,7 @@ class DeeVidAPI {
       const data = await response.json();
       console.log("✓ Task dibuat");
       return {
-        ...data.data?.data,
+        ...data.data,
         key: currentKey
       };
     } catch (error) {
@@ -441,7 +441,7 @@ class DeeVidAPI {
       const data = await response.json();
       console.log("✓ Task dibuat");
       return {
-        ...data.data?.data,
+        ...data.data,
         key: currentKey
       };
     } catch (error) {
@@ -487,7 +487,7 @@ class DeeVidAPI {
       const data = await response.json();
       console.log("✓ Task dibuat");
       return {
-        ...data.data?.data,
+        ...data.data,
         key: currentKey
       };
     } catch (error) {
@@ -538,7 +538,7 @@ class DeeVidAPI {
       const data = await response.json();
       console.log("✓ Task dibuat");
       return {
-        ...data.data?.data,
+        ...data.data,
         key: currentKey
       };
     } catch (error) {
@@ -571,7 +571,7 @@ class DeeVidAPI {
       });
       const data = await response.json();
       return {
-        ...data.data?.data,
+        ...data.data,
         key: currentKey
       };
     } catch (error) {
@@ -604,7 +604,7 @@ class DeeVidAPI {
       });
       const data = await response.json();
       return {
-        ...data.data?.data,
+        ...data.data,
         key: currentKey
       };
     } catch (error) {
