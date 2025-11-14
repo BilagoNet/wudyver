@@ -50,7 +50,7 @@ export default async function handler(req, res) {
     action,
     ...params
   } = req.method === "GET" ? req.query : req.body;
-  const tracker = new TrackingService();
+  const api = new TrackingService();
   try {
     let data;
     switch (action) {
@@ -61,16 +61,16 @@ export default async function handler(req, res) {
           });
         }
         if (!params.expedisi) {
-          data = tracker.getExpedisi();
+          data = api.getExpedisi();
           return res.status(200).json({
             message: "Ekspedisi tidak diisi, berikut adalah daftar ekspedisi:",
             data: data
           });
         }
-        data = await tracker.check(params);
+        data = await api.check(params);
         return res.status(200).json(data);
       case "list":
-        data = tracker.getExpedisi();
+        data = api.getExpedisi();
         return res.status(200).json(data);
       default:
         return res.status(400).json({

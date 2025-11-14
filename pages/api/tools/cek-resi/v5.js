@@ -133,7 +133,7 @@ export default async function handler(req, res) {
     action,
     ...params
   } = req.method === "GET" ? req.query : req.body;
-  const lacak = new LacakResiScraper();
+  const api = new LacakResiScraper();
   try {
     let data;
     switch (action) {
@@ -144,16 +144,16 @@ export default async function handler(req, res) {
           });
         }
         if (!params.expedisi) {
-          data = await lacak.expedisiList();
+          data = await api.expedisiList();
           return res.status(200).json({
             message: "Ekspedisi tidak diisi, berikut adalah daftar ekspedisi:",
             data: data
           });
         }
-        data = await lacak.cekResi(params);
+        data = await api.cekResi(params);
         return res.status(200).json(data);
       case "list":
-        data = await lacak.expedisiList();
+        data = await api.expedisiList();
         return res.status(200).json(data);
       default:
         return res.status(400).json({

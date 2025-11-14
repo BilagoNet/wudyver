@@ -73,7 +73,7 @@ export default async function handler(req, res) {
     action,
     ...params
   } = req.method === "GET" ? req.query : req.body;
-  const scraper = new MengantarScraper();
+  const api = new MengantarScraper();
   try {
     let data;
     switch (action) {
@@ -84,16 +84,16 @@ export default async function handler(req, res) {
           });
         }
         if (!params.expedisi) {
-          data = await scraper.expedisiList();
+          data = await api.expedisiList();
           return res.status(200).json({
             message: "Ekspedisi tidak diisi, berikut adalah daftar ekspedisi:",
             data: data
           });
         }
-        data = await scraper.trackResi(params);
+        data = await api.trackResi(params);
         return res.status(200).json(data);
       case "list":
-        data = await scraper.expedisiList();
+        data = await api.expedisiList();
         return res.status(200).json(data);
       default:
         return res.status(400).json({

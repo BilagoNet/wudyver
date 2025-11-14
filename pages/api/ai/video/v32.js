@@ -29,7 +29,7 @@ class Api302Service {
       defaultHeaders: {
         Accept: "application/json",
         "Content-Type": "application/json",
-        Authorization: "Bearer " + this.decode(this.randomSelect(["c2stWVpoak9pNTl0MVNvNnVWS1RFSE95ZnhmMXNWekl6ZHphSTg5UndIQk5HbkZHSUVw", "c2stZWR0MUlBZ2hyQU9TWlVQUzl4VzRTaG1TNW54bWlDbmFjQXFZQzc2VnJ2Q3JBemc5"]))
+        Authorization: "Bearer " + this.decode(this.randomSelect(["c2stN1I1NTY5MHhVV2tRYVlUdk5XY1cxZGJHME02a3VmZG9QQmhqanFyREpRQ3RBZGdW", "c2stWVpoak9pNTl0MVNvNnVWS1RFSE95ZnhmMXNWekl6ZHphSTg5UndIQk5HbkZHSUVw", "c2stZWR0MUlBZ2hyQU9TWlVQUzl4VzRTaG1TNW54bWlDbmFjQXFZQzc2VnJ2Q3JBemc5"]))
       }
     };
   }

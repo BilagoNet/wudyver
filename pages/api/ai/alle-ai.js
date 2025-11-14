@@ -323,12 +323,12 @@ class AlleAI {
           authorization: `Bearer ${this.token}`
         }
       });
-      if (!data.status || !Array.isArray(data.data?.models)) {
+      if (!data) {
         throw new Error("Gagal ambil model atau format tidak valid");
       }
       console.log(`[MODELS] Ditemukan ${data.data.models.length} model`);
       return {
-        models: data.data.models,
+        models: data,
         key: sessionKey
       };
     } catch (err) {

@@ -241,7 +241,7 @@ export default async function handler(req, res) {
     action,
     ...params
   } = req.method === "GET" ? req.query : req.body;
-  const shipperApi = new ShipperAPI();
+  const api = new ShipperAPI();
   try {
     let data;
     switch (action) {
@@ -251,7 +251,7 @@ export default async function handler(req, res) {
             error: "Silakan masukkan nomor resi."
           });
         }
-        data = await shipperApi.track(params);
+        data = await api.track(params);
         return res.status(200).json(data);
       case "list":
         if (!params.resi) {
@@ -259,7 +259,7 @@ export default async function handler(req, res) {
             error: "Silakan masukkan nomor resi."
           });
         }
-        data = await shipperApi.getExp(params);
+        data = await api.getExp(params);
         return res.status(200).json(data);
       default:
         return res.status(400).json({
