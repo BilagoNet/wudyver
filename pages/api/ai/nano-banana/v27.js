@@ -21,7 +21,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const buildCookieHeader = jar => {
   return Object.entries(jar).map(([k, v]) => `${k}=${v}`).join("; ");
 };
-export class Supawork {
+class Supawork {
   constructor() {
     this.baseUrl = "https://supawork.ai";
     this.cookieJar = {
