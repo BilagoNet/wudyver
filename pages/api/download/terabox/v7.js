@@ -8,8 +8,8 @@ import {
 import {
   FormData
 } from "formdata-node";
-class TeraboxLinkDownloader {
-  constructor(hostIndex = 1) {
+class TeraboxDownloader {
+  constructor({ host: hostIndex = 1}) {
     this.hosts = ["teradownloaderr.com", "teraboxlinkdownloader.com", "teraboxdownloaders.net"];
     this.selectedHost = this.hosts[hostIndex] || this.hosts[1];
     this.baseUrl = `https://${this.selectedHost}/wp-admin/admin-ajax.php`;
@@ -28,7 +28,7 @@ class TeraboxLinkDownloader {
       "x-requested-with": "XMLHttpRequest"
     };
   }
-  async fetchDownloadLink(teraboxUrl) {
+  async download({ url: teraboxUrl }) {
     try {
       const formData = new FormData();
       formData.append("action", "terabox_download");
@@ -46,24 +46,20 @@ class TeraboxLinkDownloader {
   }
 }
 export default async function handler(req, res) {
-  const {
-    url,
-    host = 1
-  } = req.method === "GET" ? req.query : req.body;
-  if (!url) {
+  const params = req.method === "GET" ? req.query : req.body;
+  if (!params.url) {
     return res.status(400).json({
-      error: "Paramenter `url` wajib disertakan"
+      error: "Parameter 'url' diperlukan"
     });
   }
-  const hostIndex = parseInt(host, 10);
-  const terabox = new TeraboxLinkDownloader(hostIndex);
+  const api = new TeraboxDownloader(params);
   try {
-    const result = await terabox.fetchDownloadLink(url);
-    return res.status(200).json(result);
+    const data = await api.download(params);
+    return res.status(200).json(data);
   } catch (error) {
-    console.error("Error during processing:", error);
+    const errorMessage = error.message || "Terjadi kesalahan saat memproses URL";
     return res.status(500).json({
-      error: error.message || "Terjadi kesalahan server"
+      error: errorMessage
     });
   }
 }

@@ -1,149 +1,262 @@
 import axios from "axios";
+import {
+  wrapper
+} from "axios-cookiejar-support";
+import {
+  CookieJar
+} from "tough-cookie";
 import crypto from "crypto";
-class Downloader {
+class IgDl {
   constructor() {
+    this.jar = new CookieJar();
+    this.client = wrapper(axios.create({
+      jar: this.jar,
+      withCredentials: true
+    }));
     this.hosts = [{
       base: "https://anonyig.com",
       msec: "/msec",
       convert: "/api/convert",
-      timestamp: 1739381824973,
-      key: "5afb47490491edfebd8d9ced642d08b96107845bb56cad4affa85b921babdf95"
+      ts: 1762940332915,
+      key: "e9fd4a500d4f0994fc6a6904dfb4a6e854e286cd56f4f8d212dc5a18211057df",
+      payload: {
+        format: "form",
+        ref: "https://anonyig.com/en/"
+      }
     }, {
       base: "https://gramsnap.com",
       msec: "/msec",
       convert: "/api/convert",
-      timestamp: 1750075025604,
-      key: "b19a64132b1a1f9d73a4cc2d008786b20af77f562fad17e3994b2b5c10274976"
+      ts: 1762959817732,
+      key: "3aa76a9fae4e4aeed77942a666b12eb9647244a34f14a4fd4b2c68d9b9200bc1",
+      payload: {
+        format: "form",
+        ref: "https://gramsnap.com/en/"
+      }
     }, {
       base: "https://storiesig.info",
+      api: "https://api-wh.storiesig.info",
       msec: "/msec",
       convert: "/api/convert",
-      timestamp: 1749724963437,
-      key: "b72fe394ae93764893751214e145ddd30d96dfe8700962857adc1e5a71611037"
+      ts: 1762952666265,
+      key: "bd8f830d1f4c85b75fd1c1c76f8fba1f5421189226a8715815450fb2a41bd598",
+      payload: {
+        format: "form",
+        ref: "https://storiesig.info/"
+      }
     }, {
       base: "https://igram.world",
+      api: "https://api-wh.igram.world",
       msec: "/msec",
       convert: "/api/convert",
-      timestamp: 1749725574002,
-      key: "d259a13e885a92b6536070f11f09a62e8a4fda59eb7bd2f012ab7935f88ee776"
+      ts: 1763129421273,
+      key: "36fc819c862897305f027cda96822a071a4a01b7f46bb4ffaac9b88a649d9c28",
+      payload: {
+        format: "form",
+        ref: "https://igram.world/"
+      }
     }, {
       base: "https://sssinstagram.com",
       msec: "/msec",
       convert: "/api/convert",
-      timestamp: 1750149828111,
-      key: "a695a3ad90046a06b9e8d24b8bfd723ed42f7c27e9ee52a9cb10a345f25355ff"
+      ts: 1762570846271,
+      key: "a5d96f3a271bbd987211d7d4bd97787419c3cf25575b30cc033880a01ea53a4d",
+      payload: {
+        format: "json",
+        ref: null
+      }
     }, {
       base: "https://instasupersave.com",
       msec: "/msec",
       convert: "/api/convert",
-      timestamp: 1750202590767,
-      key: "18ca2de3f2396e8608aa1f1eb9dbb4b187510b0d289983151faac41685458219"
+      ts: 1763015662213,
+      key: "80df0ff6afa58942f6e04e9e5b39acab9a9354776b76f3c05132c7b2cfbc66e6",
+      payload: {
+        format: "form",
+        ref: "https://instasupersave.com/en/"
+      }
     }, {
       base: "https://snapinsta.guru",
       msec: "/msec",
       convert: "/api/convert",
-      timestamp: 1747899817053,
-      key: "3605c9937352167908e3a1eb1cd8ff1fee75f6b94f45737903270926c07bb70a"
+      ts: 1763046454092,
+      key: "45b0d27eeb978a1c4f8dd45a7a3f8713fa29f6a5c1c39589acd981b216d57a0d",
+      payload: {
+        format: "form",
+        ref: "https://snapinsta.guru/",
+        xsrf: true
+      }
     }, {
       base: "https://picuki.site",
       msec: "/msec",
       convert: "/api/convert",
-      timestamp: 1746520014774,
-      key: "299f3bbb75f2bf6e408db3aed0e52e6289329e2a7c876e788375c0aa1c65f711"
+      ts: 1762941359243,
+      key: "39f50b28e569e266e1b05abb78bf72723d75e37213122c2f0c742d2e6259f3d5",
+      payload: {
+        format: "form",
+        ref: "https://picuki.site/",
+        xsrf: true
+      }
     }];
   }
-  getHeaders(apiBase) {
-    const userAgents = ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Safari/605.1.15", "Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Mobile Safari/537.36", "Postify/1.0.0"];
-    const randomUserAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
+  hdr(base, api) {
+    const ua = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36";
+    const origin = api || base;
+    const {
+      host
+    } = new URL(origin);
     return {
-      authority: new URL(apiBase).host,
-      origin: apiBase,
-      referer: apiBase,
-      "user-agent": randomUserAgent,
       accept: "application/json, text/plain, */*",
-      "accept-language": "en-US,en;q=0.9"
+      "accept-language": "id-ID",
+      origin: base,
+      referer: base + "/",
+      "sec-ch-ua": '"Chromium";v="127", "Not)A;Brand";v="99"',
+      "sec-ch-ua-mobile": "?1",
+      "sec-ch-ua-platform": '"Android"',
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": api ? "same-site" : "same-origin",
+      "user-agent": ua,
+      authority: host
     };
   }
-  async getTs(apiBase, msecEndpoint) {
-    let baseUrlForMsec = apiBase;
-    if (apiBase.includes("igram.world") || apiBase.includes("storiesig.info")) {
-      baseUrlForMsec = apiBase.includes("igram.world") ? "https://api.igram.world" : "https://api.storiesig.info";
-    }
+  async ms(base, api, path) {
+    const url = (api || base) + path;
+    console.log(`[TS] GET ${url}`);
     try {
-      console.log(`[TS] Mengambil timestamp dari: ${baseUrlForMsec}${msecEndpoint}`);
       const {
         data
-      } = await axios.get(`${baseUrlForMsec}${msecEndpoint}`, {
-        headers: this.getHeaders(apiBase)
+      } = await this.client.get(url, {
+        headers: this.hdr(base, api)
       });
-      console.log(`[TS] Timestamp berhasil diambil: ${data.msec}`);
-      return Math.floor(data.msec * 1e3);
-    } catch (error) {
-      console.error(`[TS ERROR] Gagal mengambil timestamp dari ${baseUrlForMsec}${msecEndpoint}: ${error.message}`);
+      console.log(`[TS] ✓ ${data?.msec || 0}`);
+      return Math.floor((data?.msec || 0) * 1e3);
+    } catch (e) {
+      console.log(`[TS] ✗ ${e?.message || "fail"}`);
       return 0;
     }
   }
-  async fetch({
-    url,
-    hostIndex = 0,
-    ...options
-  }) {
-    const hostConfig = this.hosts[hostIndex];
-    if (!hostConfig) {
-      throw new Error(`Host pada indeks "${hostIndex}" tidak ditemukan.`);
-    }
-    const {
-      base,
-      msec,
-      convert,
-      timestamp,
-      key
-    } = hostConfig;
-    console.log(`[FETCH] Memulai proses download untuk URL: ${url} menggunakan host: ${base}`);
+  sig(url, ab, ts, key) {
+    return crypto.createHash("sha256").update(`${url}${ab}${key}`).digest("hex");
+  }
+  body(url, ab, ts, tsc, sig, fmt) {
+    const obj = {
+      url: url,
+      ts: ab,
+      _ts: ts,
+      _tsc: tsc,
+      _s: sig
+    };
+    return fmt === "json" ? obj : new URLSearchParams({
+      sf_url: url,
+      ...obj
+    }).toString();
+  }
+  async xsrf(base) {
     try {
-      const time = await this.getTs(base, msec);
-      const ab = Date.now() - (time ? Date.now() - time : 0);
-      const hash = `${url}${ab}${key}`;
-      const signature = crypto.createHash("sha256").update(hash).digest("hex");
-      let convertApiBase = base;
-      if (base.includes("igram.world")) {
-        convertApiBase = "https://api.igram.world";
-      }
-      console.log(`[FETCH] Mengirim permintaan konversi ke: ${convertApiBase}${convert}`);
-      const {
-        data
-      } = await axios.post(`${convertApiBase}${convert}`, {
-        url: url,
-        ts: ab,
-        _ts: timestamp,
-        _tsc: time ? Date.now() - time : 0,
-        _s: signature
-      }, {
-        headers: this.getHeaders(base),
-        ...options
+      console.log(`[XSRF] GET ${base}/`);
+      await this.client.get(base + "/", {
+        headers: this.hdr(base)
       });
-      console.log(`[FETCH] Respon konversi berhasil diterima dari ${convertApiBase}.`);
-      return data;
-    } catch (error) {
-      console.error(`[FETCH ERROR] Gagal mengkonversi URL ${url} dengan host ${base}: ${error.message}`);
-      throw new Error(`Gagal mengunduh konten: ${error.message}`);
+      const cookies = await this.jar.getCookies(base);
+      const xsrf = cookies.find(c => c.key === "XSRF-TOKEN");
+      console.log(`[XSRF] ${xsrf ? "✓" : "✗"}`);
+      return xsrf?.value || null;
+    } catch (e) {
+      console.log(`[XSRF] ✗ ${e?.message || "fail"}`);
+      return null;
+    }
+  }
+  async download({
+    host,
+    url,
+    ...rest
+  }) {
+    const h = this.hosts[host || 0];
+    if (!h) throw new Error(`Host ${host} not found`);
+    console.log(`\n[DL] ${h.base}`);
+    console.log(`[DL] URL: ${url}`);
+    try {
+      const api = h.api || null;
+      const ms = await this.ms(h.base, api, h.msec);
+      const ab = Date.now();
+      const tsc = ms ? ab - ms : 0;
+      const sig = this.sig(url, ab, h.ts, h.key);
+      const fmt = h.payload?.format || "form";
+      const data = this.body(url, ab, h.ts, tsc, sig, fmt);
+      const hdrs = this.hdr(h.base, api);
+      hdrs["content-type"] = fmt === "json" ? "application/json" : "application/x-www-form-urlencoded;charset=UTF-8";
+      if (h.payload?.xsrf) {
+        const token = await this.xsrf(h.base);
+        if (token) hdrs["x-xsrf-token"] = decodeURIComponent(token);
+      }
+      const convertUrl = (api || h.base) + h.convert;
+      console.log(`[DL] POST ${convertUrl}`);
+      const cfg = {
+        headers: hdrs,
+        ...rest
+      };
+      const res = await this.client.post(convertUrl, data, cfg);
+      console.log(`[DL] ✓ ${res?.status || 200}\n`);
+      return res?.data || res;
+    } catch (e) {
+      console.log(`[DL] ✗ ${e?.response?.status || 500}: ${e?.message || "fail"}\n`);
+      throw e;
     }
   }
 }
 export default async function handler(req, res) {
-  const params = req.method === "GET" ? req.query : req.body;
-  if (!params.url) {
+  const {
+    url,
+    host = 0,
+    ...params
+  } = req.method === "POST" ? req.body : req.query;
+  console.log(`[API] ${req.method} /api/download`);
+  console.log(`[API] Host: ${host}, URL: ${url || "missing"}`);
+  if (!url) {
+    console.log("[API] ✗ 400 - URL required\n");
     return res.status(400).json({
-      error: "Url are required"
+      success: false,
+      error: "URL parameter is required",
+      usage: {
+        method: "GET or POST",
+        params: {
+          url: "Instagram URL (required)",
+          host: "Host index 0-7 (optional, default: 0)"
+        },
+        example: "/api/download?url=https://instagram.com/reel/ABC123&host=0"
+      }
     });
   }
   try {
-    const downloader = new Downloader();
-    const response = await downloader.fetch(params);
-    return res.status(200).json(response);
-  } catch (error) {
-    res.status(500).json({
-      error: error.message || "Internal Server Error"
+    const dl = new IgDl();
+    const hostNum = parseInt(host) || 0;
+    if (hostNum < 0 || hostNum >= dl.hosts.length) {
+      console.log(`[API] ✗ 400 - Invalid host index\n`);
+      return res.status(400).json({
+        success: false,
+        error: `Host index must be between 0-${dl.hosts.length - 1}`,
+        availableHosts: dl.hosts.map((h, i) => ({
+          index: i,
+          name: h.base.replace("https://", "")
+        }))
+      });
+    }
+    const result = await dl.download({
+      host: hostNum,
+      url: url,
+      ...params
+    });
+    console.log("[API] ✓ 200 - Success\n");
+    return res.status(200).json(result);
+  } catch (e) {
+    const status = e?.response?.status || 500;
+    const msg = e?.response?.data?.message || e?.message || "Internal server error";
+    console.log(`[API] ✗ ${status} - ${msg}\n`);
+    return res.status(status).json({
+      success: false,
+      error: msg,
+      details: e?.response?.data || null
     });
   }
 }

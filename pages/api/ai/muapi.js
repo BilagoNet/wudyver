@@ -313,11 +313,6 @@ export default async function handler(req, res) {
           error: `Action tidak valid: ${action}. Didukung: tools, detail, generate, status`
         });
     }
-    if (response && response.error) {
-      return res.status(400).json({
-        error: response.error
-      });
-    }
     return res.status(200).json(response);
   } catch (error) {
     console.error(`[FATAL ERROR] Action '${action}':`, error.message);

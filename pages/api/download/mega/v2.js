@@ -1,124 +1,124 @@
 import axios from "axios";
-import CryptoJS from "crypto-js";
-class MegaDownload {
+import crypto from "crypto";
+import {
+  lookup
+} from "mime-types";
+class MegaDL {
   constructor() {
-    this.base = "https://g.api.mega.co.nz/cs";
-    this.headers = {
-      "user-agent": "Postify/1.0.0",
-      origin: "https://mega.nz",
-      referer: "https://mega.nz"
+    this.a = axios.create();
+  }
+  async i(u) {
+    console.log("info →", u);
+    const m = u.match(/mega\.nz\/(?:#!|file\/)([a-zA-Z0-9_-]+)[!#]([a-zA-Z0-9_-]+)/);
+    if (!m) throw new Error("invalid mega url");
+    const [, id, k] = m;
+    const {
+      data
+    } = await this.a.post("https://g.api.mega.co.nz/cs", [{
+      a: "g",
+      g: 1,
+      ssl: 2,
+      v: 2,
+      p: id
+    }], {
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+    const f = data[0] ?? null;
+    if (!f?.at) throw new Error("file not found");
+    const kb = Buffer.from(k.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - k.length % 4) % 4), "base64");
+    const ka = Array.from({
+      length: Math.ceil(kb.length / 4)
+    }, (_, i) => kb.readUInt32BE(i * 4));
+    const fk = ka.length === 8 ? [ka[0] ^ ka[4], ka[1] ^ ka[5], ka[2] ^ ka[6], ka[3] ^ ka[7]] : ka.slice(0, 4);
+    const kbuf = Buffer.alloc(16);
+    fk.forEach((v, i) => kbuf.writeUInt32BE(v >>> 0, i * 4));
+    const ea = Buffer.from(f.at.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - f.at.length % 4) % 4), "base64");
+    const d = crypto.createDecipheriv("aes-128-cbc", kbuf, Buffer.alloc(16, 0));
+    d.setAutoPadding(false);
+    const dec = Buffer.concat([d.update(ea), d.final()]);
+    const attr = dec.toString("utf8").replace(/\0+$/, "");
+    const meta = attr.startsWith("MEGA{") ? JSON.parse(attr.slice(4)) : {
+      n: "Unknown"
+    };
+    const ext = meta.n?.split(".").pop()?.toLowerCase() ?? "";
+    const size = f.s === 0 ? "0 Bytes" : (() => {
+      const i = Math.floor(Math.log(f.s) / Math.log(1024));
+      return `${(f.s / Math.pow(1024, i)).toFixed(2)} ${[ "Bytes", "KB", "MB", "GB", "TB" ][i]}`;
+    })();
+    console.log("info ok →", {
+      name: meta.n,
+      size: size
+    });
+    return {
+      fileId: id,
+      fileName: meta.n ?? "Unknown",
+      fileSize: size,
+      fileSizeBytes: f.s,
+      mimeType: lookup(ext) || null,
+      downloadUrl: f.g
     };
   }
-  async download(inputUrl, retryCount = 0, timeout = 1e4) {
-    const url = decodeURIComponent(inputUrl);
-    let result = {
-      result: []
-    };
+  async download({
+    url,
+    output = "json",
+    ...rest
+  }) {
     try {
-      const [, fileId] = url.match(/file\/([^#]+)/) || [];
-      const fileKey = url.split("#")[1];
-      if (!fileId) {
+      console.log("download →", url, {
+        output: output
+      });
+      const info = await this.i(url);
+      if (output === "json") {
+        console.log("validasi download url");
+        const head = await this.a.head(info.downloadUrl, rest);
+        const contentLength = head.headers["content-length"] ?? null;
+        console.log("json ready →", contentLength, "bytes");
         return {
-          error: "Apalaaaahh 🗿 cuman link meganya doang! f*ck lahh"
+          ...info,
+          downloadUrlValid: !!contentLength,
+          contentLength: contentLength ? parseInt(contentLength, 10) : null,
+          timestamp: new Date().toISOString(),
+          region: "ID",
+          timezone: "WITA"
         };
       }
-      if (!fileKey || fileKey.length !== 43) {
-        return {
-          error: fileKey.length < 43 ? "Karakter link mega nya kurang bree, coba cek lagi dah 😂" : "Karakter link mega nya kelebihan bree, coba cek lagi dah 😂"
-        };
-      }
-      const {
-        data
-      } = await axios.post(this.base, [{
-        a: "g",
-        g: 1,
-        p: fileId
-      }], {
-        headers: this.headers,
-        timeout: timeout
+      console.log(`fetching full file → ${info.fileName} (${info.fileSize})`);
+      const res = await this.a.get(info.downloadUrl, {
+        responseType: "arraybuffer",
+        ...rest
       });
-      const base64ToAb = base64 => {
-        if (typeof base64 !== "string") {
-          return {
-            error: base64
-          };
-        }
-        try {
-          return {
-            data: Uint8Array.from(atob(base64.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0))
-          };
-        } catch (error) {
-          return {
-            error: error
-          };
-        }
+      const buf = Buffer.from(res.data);
+      console.log("file downloaded →", buf.length, "bytes");
+      return output === "base64" ? {
+        base64: buf.toString("base64"),
+        info: info
+      } : {
+        buffer: buf,
+        info: info
       };
-      const getKey = key => {
-        const k = new Uint32Array(base64ToAb(key).data.buffer);
-        return new Uint8Array(new Uint32Array([k[0] ^ k[4], k[1] ^ k[5], k[2] ^ k[6], k[3] ^ k[7]]).buffer);
-      };
-      const decryptAttr = (enc, key) => {
-        if (!enc || !key) {
-          return {
-            error: "Key ama Enc kodenya kagak ada wehhh, nyoba lagi aja nanti yak 🗿"
-          };
-        }
-        try {
-          const decrypted = CryptoJS.AES.decrypt({
-            ciphertext: CryptoJS.lib.WordArray.create(base64ToAb(enc).data)
-          }, CryptoJS.lib.WordArray.create(getKey(key)), {
-            iv: CryptoJS.lib.WordArray.create(new Uint8Array(16)),
-            mode: CryptoJS.mode.CBC,
-            padding: CryptoJS.pad.NoPadding
-          });
-          let result = CryptoJS.enc.Utf8.stringify(decrypted).replace(/[\u0000-\u001F\u007F-\x9F]/g, "").trim();
-          return {
-            data: JSON.parse(result.startsWith("MEGA") ? result.substring(4) : result)
-          };
-        } catch (err) {
-          return {
-            error: err
-          };
-        }
-      };
-      const attrs = data[0].at ? decryptAttr(data[0].at, fileKey) : null;
-      result.result.push({
-        type: "file",
-        id: fileId,
-        key: fileKey,
-        name: attrs && attrs.data.n || "[Encrypted Filename]",
-        title: data[0].at,
-        size: data[0].s,
-        link: data[0].g
-      });
-    } catch (err) {
-      if (retryCount < 3) {
-        return this.download(url, retryCount + 1, timeout);
-      }
-      return {
-        error: err.message
-      };
+    } catch (e) {
+      console.error("download error →", e.message);
+      throw new Error(e.message);
     }
-    return result;
   }
 }
 export default async function handler(req, res) {
-  const {
-    url
-  } = req.method === "GET" ? req.query : req.body;
-  if (!url) {
+  const params = req.method === "GET" ? req.query : req.body;
+  if (!params.url) {
     return res.status(400).json({
-      error: "URL tidak ditemukan. Pastikan URL sudah benar."
+      error: "Parameter 'url' diperlukan"
     });
   }
+  const api = new MegaDL();
   try {
-    const megaDownload = new MegaDownload();
-    const result = await megaDownload.download(url);
-    return res.status(200).json(result);
+    const data = await api.download(params);
+    return res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({
-      error: "Terjadi kesalahan pada server, coba lagi nanti.",
-      details: error.message
+    const errorMessage = error.message || "Terjadi kesalahan saat memproses URL";
+    return res.status(500).json({
+      error: errorMessage
     });
   }
 }
