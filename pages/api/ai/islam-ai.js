@@ -1,10 +1,11 @@
 import fetch from "node-fetch";
+import ApiKey from "@/configs/api-key";
 async function IslamAndAIChat(message) {
   try {
     const url = "https://api.openai.com/v1/chat/completions";
     const headers = {
       "Content-Type": "application/json",
-      Authorization: atob("QmVhcmVyIHNrLU9VOEM4ZFl1eVZUUWRuVG9qVnRtV3lleU5rUUlNd1drRnpsajc3a3JZcVQzQmxia0ZKazZycW54U0lqa0lUT1VpLWxCTG9DejhseHpQT203cmZzZFFHMTZ2OUVB"),
+      Authorization: ApiKey.openai?.[1],
       "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36",
       Referer: "https://islamandai.com/chat",
       Origin: "https://islamandai.com",

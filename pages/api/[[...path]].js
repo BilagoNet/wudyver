@@ -1,51 +1,46 @@
-import axios from "axios";
-import apiConfig from "@/configs/apiConfig";
-const BASE_URL = `https://${apiConfig.DOMAIN_URL}/`;
-const OPENAPI_URL = `${BASE_URL}api/openapi`;
-async function fetchOpenAPIRoutes() {
-  try {
-    const response = await axios.get(OPENAPI_URL, {
-      timeout: 3e3
-    });
-    const spec = response.data;
-    const paths = spec.paths ? Object.keys(spec.paths) : [];
-    const routes = paths.map(p => `${p}`);
-    return routes;
-  } catch (error) {
-    console.error("Axios/OpenAPI fetch error:", error.message);
-    return [];
-  }
-}
 export default async function handler(req, res) {
   const pathSegments = req.query.path || [];
   const requestedPath = pathSegments.join("/");
-  let availableRoutes = [];
+  const fullPath = `/${requestedPath}`;
   try {
-    availableRoutes = await fetchOpenAPIRoutes();
-    const message = `API Route /${requestedPath} (method ${req.method}) tidak ditemukan.`;
-    const body = {
-      success: false,
-      status: 404,
-      code: `ROUTE_NOT_FOUND`,
-      message: message,
-      method: req.method,
-      path: req.url,
-      timestamp: new Date().toISOString(),
-      playground: `${BASE_URL}try-it`,
-      swagger: `${BASE_URL}docs/swagger`,
-      rapidoc: `${BASE_URL}docs/rapidoc`,
-      stoplight: `${BASE_URL}docs/stoplight`,
-      available_routes: availableRoutes
-    };
     res.setHeader("Content-Type", "application/json");
-    return res.status(404).json(body);
+    return res.status(404).json({
+      success: false,
+      error: {
+        status: 404,
+        code: "ROUTE_NOT_FOUND",
+        message: `Endpoint ${req.method} ${fullPath} tidak ditemukan.`,
+        timestamp: new Date().toISOString(),
+        method: req.method,
+        path: req.url,
+        documentation: [{
+          name: "Playground",
+          url: "/try-it"
+        }, {
+          name: "Swagger UI",
+          url: "/docs/swagger"
+        }, {
+          name: "RapiDoc",
+          url: "/docs/rapidoc"
+        }, {
+          name: "Stoplight Elements",
+          url: "/docs/stoplight"
+        }],
+        suggestion: "Cek dokumentasi interaktif di /try-it atau /docs/rapidoc"
+      }
+    });
   } catch (error) {
     console.error("Internal Server Error while processing 404:", error);
     return res.status(500).json({
       success: false,
-      status: 500,
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Internal error during 404 processing."
+      error: {
+        status: 500,
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal error during 404 processing.",
+        timestamp: new Date().toISOString(),
+        method: req.method,
+        path: req.url
+      }
     });
   }
 }

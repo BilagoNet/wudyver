@@ -1,7 +1,8 @@
 import fetch from "node-fetch";
+import ApiKey from "@/configs/api-key";
 class AIClient {
   constructor() {
-    this.apiKey = this.decode("c2stcHJvai1DRDhzVzU1djdaNlBNdjR3QTlfVWxFZXk5X1hiaWMtTkktRFhZQlZGdmRzUEFMdFBkV05TdllraGpKWU1MaUtRSnIycEhneXR2ZFQzQmxia0ZKSXM2U0taTEhEZEhHbUZuRWF6enVJYzhTR2ZjeGVKM0Q4U2dJMWp4RjlHZTNYdUc4bWVveXhRR3E1TVJzM0kyMEZyWS0wX0MwTUE");
+    this.apiKey = ApiKey.openai?.[3];
     this.baseUrl = "https://api.openai.com/v1";
     this.endpoints = {
       chat: "/chat/completions",

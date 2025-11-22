@@ -1,13 +1,13 @@
 import fetch from "node-fetch";
 import https from "https";
+import ApiKey from "@/configs/api-key";
 class OpenAITTS {
   constructor({
-    apiKey = "c2stcHJvai05U2h3bTZYbXk1dGJaX0VjQzVWbjFhb3k2RTFDV1FYQ0pWVGZLOS1LS1BhcTk1RVVmcDIxaEY5SWFoaHE2QzV5dDN6d1hrMVkwVFQzQmxia0ZKY1BLWmxGR3daWTdZWXhYSU9yMktpRmpPRVpfSWZISUxWNHAzOGhMR3FaLWEybTVXOVFyaEpHTkthbjNzMWlCN2JmS3dXRnhla0E",
     model = "tts-1",
     voice = "alloy"
   } = {}) {
     this.API_URL = "https://api.openai.com/v1/audio/speech";
-    this.apiKey = this.decode(apiKey);
+    this.apiKey = ApiKey.openai?.[4];
     this.model = model;
     this.voice = voice;
     this.httpsAgent = new https.Agent({

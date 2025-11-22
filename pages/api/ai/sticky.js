@@ -1,12 +1,11 @@
 import axios from "axios";
+import ApiKey from "@/configs/api-key";
 class Sticky {
   constructor() {
-    const base64ApiKey = "c2stZ2hVbDFHbGtQZ0dFMm1kUjcyRFBUM0JsYmtGSkcxSFcwUTlUZGdWeWtKdUFMM1hT";
-    const apiKey = Buffer.from(base64ApiKey, "base64").toString("utf-8");
     this.headersGenerate = {
       accept: "application/json, text/plain, */*",
       "accept-language": "id-ID,id;q=0.9",
-      authorization: `Bearer ${apiKey}`,
+      authorization: ApiKey.openai?.[2],
       "cache-control": "no-cache",
       "content-type": "application/json",
       origin: "https://sticky.cool",

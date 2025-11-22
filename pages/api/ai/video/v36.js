@@ -1212,11 +1212,7 @@ export default async function handler(req, res) {
           supported_actions: ["register", "credits", "check_session", "upload", "generate", "status", "list_key", "del_key"]
         });
     }
-    return res.status(200).json({
-      success: true,
-      ...response,
-      timestamp: new Date().toISOString()
-    });
+    return res.status(200).json(response);
   } catch (error) {
     if (error.name === "ValidationFailed") {
       return res.status(400).json({

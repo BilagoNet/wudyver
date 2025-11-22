@@ -3,6 +3,7 @@ import {
   Agent as HttpsAgent
 } from "https";
 import FormData from "form-data";
+import ApiKey from "@/configs/api-key";
 const httpsAgent = new HttpsAgent({
   keepAlive: true
 });
@@ -24,14 +25,14 @@ function getFilenameFromUrl(url) {
 }
 class Api302Service {
   constructor() {
-    this.apiKeys = ["c2stN1I1NTY5MHhVV2tRYVlUdk5XY1cxZGJHME02a3VmZG9QQmhqanFyREpRQ3RBZGdW", "c2stWVpoak9pNTl0MVNvNnVWS1RFSE95ZnhmMXNWekl6ZHphSTg5UndIQk5HbkZHSUVw", "c2stZWR0MUlBZ2hyQU9TWlVQUzl4VzRTaG1TNW54bWlDbmFjQXFZQzc2VnJ2Q3JBemc5"];
+    this.apiKeys = ApiKey.302ai;
     this.currentKeyIndex = 0;
     this.config = {
       endpoint: "https://api.302.ai",
       defaultHeaders: {
         Accept: "application/json",
         "Content-Type": "application/json",
-        Authorization: "Bearer " + this.decode(this.getCurrentKey())
+        Authorization: this.getCurrentKey()
       }
     };
   }
@@ -40,7 +41,7 @@ class Api302Service {
   }
   rotateToNextKey() {
     this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
-    this.config.defaultHeaders.Authorization = "Bearer " + this.decode(this.getCurrentKey());
+    this.config.defaultHeaders.Authorization = this.getCurrentKey();
     console.log(`[API_KEY] Rotated to key index: ${this.currentKeyIndex}`);
   }
   decode(str) {
