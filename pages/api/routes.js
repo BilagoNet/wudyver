@@ -732,6 +732,8 @@ export default function handler(req, res) {
     { path: "/api/ai/geminigen/v2", name: "V2", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/ai/soar2", name: "Soar2", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/ai/soro2", name: "Soro2", params: [{ "name": "prompt", "in": "query", "required": false }], },
+    { path: "/api/ai/artvibe", name: "Artvibe", params: [{ "name": "prompt", "in": "query", "required": false }], },
+    { path: "/api/ai/sidekick", name: "Sidekick", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/anime/baca-komik/v1", name: "V1", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/anime/baca-komik/v2", name: "V2", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/anime/kiryuu/v1", name: "V1", params: [{ "name": "prompt", "in": "query", "required": false }], },
