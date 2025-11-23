@@ -1,6 +1,5 @@
 import axios from "axios";
 import crypto from "crypto";
-import SpoofHead from "@/lib/spoof-head";
 class ArtVibeAPI {
   constructor(config = {}) {
     this.baseURL = config.baseURL || "https://api-ga-bp.artvibe.info";
@@ -19,8 +18,7 @@ class ArtVibeAPI {
       "cache-control": "no-cache",
       "y-user-id": this.userId,
       "y-pack-name": this.packName,
-      "y-versions": JSON.stringify(this.genVersionData()),
-      ...SpoofHead()
+      "y-versions": JSON.stringify(this.genVersionData())
     };
   }
   randomUserAgent() {
@@ -501,10 +499,7 @@ export default async function handler(req, res) {
           });
         }
         response = await api.translate(params);
-        return res.status(200).json({
-          success: true,
-          data: response
-        });
+        return res.status(200).json(response);
       case "suggestion":
         if (!params.text) {
           return res.status(400).json({
@@ -512,10 +507,7 @@ export default async function handler(req, res) {
           });
         }
         response = await api.suggestion(params);
-        return res.status(200).json({
-          success: true,
-          data: response
-        });
+        return res.status(200).json(response);
       case "generate":
         if (!params.prompt) {
           return res.status(400).json({
