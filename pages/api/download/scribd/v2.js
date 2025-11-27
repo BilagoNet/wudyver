@@ -1,138 +1,142 @@
 import axios from "axios";
-class ScribdAPI {
+import {
+  wrapper
+} from "axios-cookiejar-support";
+import {
+  CookieJar
+} from "tough-cookie";
+import qs from "qs";
+class FreePdfDownloader {
   constructor() {
-    this.baseURL = "https://documents-api.dialguiba1994.workers.dev";
-    this.headers = {
-      authority: "documents-api.dialguiba1994.workers.dev",
-      "user-agent": "Postify/1.0.0"
+    this.jar = new CookieJar();
+    this.client = wrapper(axios.create({
+      jar: this.jar,
+      withCredentials: true,
+      headers: {
+        authority: "freepdfdownloader.com",
+        "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36",
+        "sec-ch-ua": '"Chromium";v="127", "Not)A;Brand";v="99"',
+        "sec-ch-ua-mobile": "?1",
+        "sec-ch-ua-platform": '"Android"',
+        "upgrade-insecure-requests": "1"
+      }
+    }));
+    this.baseUrl = "https://freepdfdownloader.com";
+  }
+  atob(str) {
+    return Buffer.from(str || "", "base64").toString("utf-8");
+  }
+  grab(html, key) {
+    const regex = new RegExp(`var\\s+${key}\\s*=\\s*['"]([^'"]+)['"]`);
+    return html.match(regex)?.[1] || null;
+  }
+  async postApi(params) {
+    const {
+      link,
+      lang,
+      token
+    } = params;
+    const payload = {
+      link: link,
+      lang: lang || "",
+      chck: ",",
+      chck2: ","
+    };
+    const res = await this.client.post(`${this.baseUrl}/api?mode=plg&token=${token || "__"}`, qs.stringify(payload), {
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        origin: this.baseUrl,
+        referer: `${this.baseUrl}/scribd`
+      }
+    });
+    return res?.data;
+  }
+  async fetchFile(encLink, ticket, next) {
+    const finalUrl = this.atob(encLink);
+    const res = await this.client.post(finalUrl, qs.stringify({
+      ticket: ticket || "",
+      next: next || ""
+    }), {
+      responseType: "arraybuffer",
+      maxRedirects: 5,
+      headers: {
+        "content-type": "application/x-www-form-urlencoded"
+      }
+    });
+    const disposition = res.headers["content-disposition"];
+    let filename = "downloaded.pdf";
+    if (disposition?.includes("filename=")) {
+      filename = disposition.split("filename=")[1].split(";")[0].replace(/['"]/g, "").trim();
+    }
+    return {
+      buffer: res.data,
+      filename: filename,
+      mimetype: res.headers["content-type"] || "application/pdf",
+      size: res.headers["content-length"] || res.data.length
     };
   }
-  isValid(url) {
-    return /^https?:\/\/[^\s/]+scribd\.com\/(?:doc|document)\/\d{2,}/i.test(url);
+  async upload({
+    buffer,
+    filename
+  }) {
+    console.log(`[LOG] Uploading to put.icu (${filename})...`);
+    const res = await axios.put("https://put.icu/upload/", buffer, {
+      headers: {
+        Accept: "application/json",
+        "X-File-Name": filename,
+        "Content-Type": "application/octet-stream"
+      }
+    });
+    return res?.data;
   }
   async download({
     url,
-    key = ""
+    ...rest
   }) {
-    if (!url?.trim()) return {
-      status: false,
-      code: 400,
-      result: {
-        error: "Invalid Scribd document link."
-      }
-    };
-    if (!this.isValid(url)) return {
-      status: false,
-      code: 400,
-      result: {
-        error: "Invalid URL format. Example: 'https://www.scribd.com/document/123456/...'"
-      }
-    };
     try {
-      const cookie = await this.getCookie(url, key);
-      if (!cookie) return {
-        status: false,
-        code: 400,
-        result: {
-          error: "Failed to retrieve authentication cookie."
-        }
-      };
-      const downloadResult = await this.processDownload(url, cookie);
-      if (downloadResult.status) {
-        const viewResult = await this.view(downloadResult.result.documentUrl);
-        return {
-          ...downloadResult,
-          result: {
-            ...downloadResult.result,
-            viewData: viewResult.result
-          }
-        };
-      }
-      return downloadResult;
-    } catch (error) {
+      console.log("[LOG] Memulai proses Scribd...");
+      const targetUrl = url || rest?.link;
+      if (!targetUrl) throw new Error("URL Scribd diperlukan.");
+      const pageRes = await this.client.get(`${this.baseUrl}/scribd`);
+      const lang = this.grab(pageRes?.data || "", "lang");
+      const token = this.grab(pageRes?.data || "", "token");
+      const apiRes = await this.postApi({
+        link: targetUrl,
+        lang: lang,
+        token: token
+      });
+      if (apiRes?.error_code || !apiRes?.link) throw new Error(apiRes?.left ? `Limit Scribd: ${apiRes.left}` : "Gagal generate link.");
+      console.log(`[LOG] File Scribd ditemukan: ${apiRes.name}`);
+      const fileData = await this.fetchFile(apiRes.link, apiRes.ticket, apiRes.next);
+      const finalName = fileData.filename || `${apiRes.name}.pdf`;
+      const uploadRes = await this.upload({
+        buffer: fileData.buffer,
+        filename: finalName
+      });
+      console.log("[LOG] Upload sukses!");
       return {
-        status: false,
-        code: error.response?.status || 500,
-        result: {
-          error: "Unable to access the document."
-        }
-      };
-    }
-  }
-  async getCookie(url, key) {
-    try {
-      const response = await axios.post(`${this.baseURL}/api/generate-document`, {
-        url: url
-      }, {
-        headers: this.headers
-      });
-      const cookies = response.headers["set-cookie"] || [];
-      return cookies.find(cookie => cookie.includes("TEMPORAL_KEY=")) || key;
-    } catch {
-      return null;
-    }
-  }
-  async processDownload(url, cookie) {
-    try {
-      const response = await axios.post(`${this.baseURL}/api/generate-document`, {
-        url: url
-      }, {
-        headers: {
-          ...this.headers,
-          cookie: cookie
-        }
-      });
-      return response.data ? {
         status: true,
-        code: 200,
-        result: response.data
-      } : {
-        status: false,
-        code: 400,
-        result: {
-          error: "No response from server."
-        }
-      };
-    } catch {
-      return {
-        status: false,
-        code: 500,
-        result: {
-          error: "Error processing the document."
-        }
-      };
-    }
-  }
-  async view(doc) {
-    if (!doc?.trim()) return {
-      status: false,
-      code: 400,
-      result: {
-        error: "Invalid document ID."
-      }
-    };
-    try {
-      const response = await axios.get(`${this.baseURL}/api/view-document/${doc}`, {
-        headers: this.headers
-      });
-      return response.data ? {
-        status: true,
-        code: 200,
-        result: response.data
-      } : {
-        status: false,
-        code: 400,
-        result: {
-          error: "No response from server."
+        file: {
+          name: finalName,
+          size: fileData.size,
+          mime: fileData.mimetype
+        },
+        scribd_source: {
+          title: apiRes?.name,
+          host: apiRes?.host
+        },
+        upload_result: {
+          url: uploadRes?.url,
+          direct_url: uploadRes?.direct_url,
+          delete_key: uploadRes?.delete_key,
+          expiry: uploadRes?.expiry
         }
       };
     } catch (error) {
+      console.log("[ERROR]", error?.message || error);
       return {
         status: false,
-        code: error.response?.status || 500,
-        result: {
-          error: "Unable to access the document."
-        }
+        message: error?.message || "Terjadi kesalahan"
       };
     }
   }
@@ -141,16 +145,17 @@ export default async function handler(req, res) {
   const params = req.method === "GET" ? req.query : req.body;
   if (!params.url) {
     return res.status(400).json({
-      error: "Url is required"
+      error: "Parameter 'url' diperlukan"
     });
   }
-  const scribd = new ScribdAPI();
+  const api = new FreePdfDownloader();
   try {
-    const data = await scribd.download(params);
+    const data = await api.download(params);
     return res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({
-      error: "Internal Server Error"
+    const errorMessage = error.message || "Terjadi kesalahan saat memproses URL";
+    return res.status(500).json({
+      error: errorMessage
     });
   }
 }
