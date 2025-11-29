@@ -6,6 +6,7 @@ import {
   CookieJar
 } from "tough-cookie";
 import qs from "qs";
+import SpoofHead from "@/lib/spoof-head";
 class FreePdfDownloader {
   constructor() {
     this.jar = new CookieJar();
@@ -22,7 +23,8 @@ class FreePdfDownloader {
         "sec-ch-ua-platform": '"Android"',
         origin: "https://anydebrid.com",
         referer: "https://anydebrid.com/",
-        "upgrade-insecure-requests": "1"
+        "upgrade-insecure-requests": "1",
+        ...SpoofHead()
       }
     }));
     this.baseUrl = "https://anydebrid.com";
@@ -167,16 +169,12 @@ class FreePdfDownloader {
       console.log("[LOG] Selesai!");
       return {
         status: true,
-        file: {
-          name: finalName,
-          size: fileData.size,
-          mime: fileData.mimetype
-        },
-        scribd_source: {
-          title: apiRes?.name,
-          host: apiRes?.host
-        },
-        upload_result: uploadRes || "Upload failed"
+        name: finalName,
+        size: fileData.size,
+        mime: fileData.mimetype,
+        title: apiRes?.name,
+        host: apiRes?.host,
+        ...uploadRes
       };
     } catch (error) {
       console.log("[ERROR]", error?.message || error);
@@ -187,10 +185,21 @@ class FreePdfDownloader {
     }
   }
 }
-(async () => {
-  const dl = new FreePdfDownloader();
-  const result = await dl.download({
-    url: "https://id.scribd.com/document/383314636/Contoh-Soal-Psikotes-Matematika-Dasar"
-  });
-  console.log(JSON.stringify(result, null, 2));
-})();
+export default async function handler(req, res) {
+  const params = req.method === "GET" ? req.query : req.body;
+  if (!params.url) {
+    return res.status(400).json({
+      error: "Parameter 'url' diperlukan"
+    });
+  }
+  const api = new FreePdfDownloader();
+  try {
+    const data = await api.download(params);
+    return res.status(200).json(data);
+  } catch (error) {
+    const errorMessage = error.message || "Terjadi kesalahan saat memproses URL";
+    return res.status(500).json({
+      error: errorMessage
+    });
+  }
+}

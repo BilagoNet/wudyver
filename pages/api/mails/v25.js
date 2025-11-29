@@ -4,15 +4,12 @@ class MailTmClient {
     this.baseUrl = baseUrl || "https://api.mail.tm";
   }
   log(message, level = "info") {
-    const time = new Date().toISOString().slice(11, 19);
-    const colorMap = {
-      info: "[36m",
-      error: "[31m",
-      success: "[32m"
+    const icons = {
+      info: "ℹ",
+      error: "✖",
+      success: "✓"
     };
-    const resetColor = "[0m";
-    const coloredMessage = `${colorMap[level] || colorMap.info}[${time}][${level.toUpperCase()}] ${message}${resetColor}`;
-    console.log(coloredMessage);
+    console.log(`${icons[level] || icons.info} ${message}`);
   }
   randStr(length = 10) {
     const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -30,7 +27,6 @@ class MailTmClient {
     const url = `${this.baseUrl}${path || "/"}`;
     const queryString = query ? `?${new URLSearchParams(query)}` : "";
     const fullUrl = `${url}${queryString}`;
-    this.log(`${method} ${fullUrl}`, "info");
     const options = {
       method: method,
       headers: {
@@ -44,33 +40,21 @@ class MailTmClient {
     try {
       const response = await fetch(fullUrl, options);
       const status = response?.status || 0;
-      const statusText = response?.statusText || "Unknown";
-      this.log(`Response: ${status} ${statusText}`, status >= 200 && status < 300 ? "success" : "error");
       if (!response.ok) {
         const errorBody = await response.json().catch(() => ({}));
-        const errorMessage = errorBody?.message || errorBody?.detail || `${status} ${statusText}`;
+        const errorMessage = errorBody?.message || errorBody?.detail || response.statusText;
         const error = new Error(`HTTP ${status}: ${errorMessage}`);
         error.status = status;
         error.details = errorBody;
-        this.log(`Error Response: ${JSON.stringify(errorBody, null, 2)}`, "error");
         throw error;
       }
       const data = status === 204 ? {
         success: true,
         message: "Resource deleted successfully"
       } : await response.json().catch(() => null);
-      if (data && data.token) {
-        this.log(`Response Data (Token): ${JSON.stringify({
-...data,
-token: "******"
-}, null, 2)}`, "success");
-      } else if (data) {
-        this.log(`Response Data: ${JSON.stringify(data, null, 2)}`, "success");
-      }
       return data;
     } catch (error) {
       if (error.status) throw error;
-      this.log(`Request failed: ${error?.message || "Unknown error"}`, "error");
       throw new Error(`Connection Error: ${error?.message || "Unknown error"}`);
     }
   }
@@ -188,10 +172,13 @@ token: "******"
       }
     });
   }
-  async create({
-    ...rest
-  }) {
-    let domain = rest?.domain;
+  async create(options = {}, retries = 3) {
+    let {
+      domain,
+      address,
+      password,
+      forceRandom = false
+    } = options;
     if (!domain) {
       const domains = await this.domains({
         page: 1
@@ -201,34 +188,47 @@ token: "******"
         throw new Error("No domain available from Mail.tm");
       }
     }
-    let address = rest?.address;
-    if (address && !address.includes("@")) {
-      address = `${address}@${domain}`;
-    } else if (!address) {
+    let baseAddress = address;
+    if (forceRandom || !address) {
       address = `user-${this.randStr(10)}@${domain}`;
+    } else if (address && !address.includes("@")) {
+      address = `${address}@${domain}`;
     }
-    const password = rest?.password || this.randStr(12);
-    this.log(`Attempting to create: ${address}`, "info");
-    const account = await this.createAccount({
-      address: address,
-      password: password
-    });
-    const accountId = account?.id;
-    const tokenResponse = await this.token({
-      address: address,
-      password: password
-    });
-    const token = tokenResponse?.token;
-    if (!token || !accountId) {
-      throw new Error("Failed to get token after account creation.");
+    password = password || this.randStr(12);
+    this.log(`Creating: ${address}`, "info");
+    try {
+      const account = await this.createAccount({
+        address: address,
+        password: password
+      });
+      const accountId = account?.id;
+      const tokenResponse = await this.token({
+        address: address,
+        password: password
+      });
+      const token = tokenResponse?.token;
+      if (!token || !accountId) {
+        throw new Error("Failed to get token after account creation.");
+      }
+      this.log(`Created: ${address}`, "success");
+      return {
+        token: token,
+        address: address,
+        password: password,
+        accountId: accountId,
+        accountInfo: account
+      };
+    } catch (error) {
+      if (error.status === 422 && error.message.includes("already used") && retries > 0) {
+        this.log(`Address taken, trying random...`, "info");
+        return this.create({
+          domain: domain,
+          password: password,
+          forceRandom: true
+        }, retries - 1);
+      }
+      throw error;
     }
-    return {
-      token: token,
-      address: address,
-      password: password,
-      accountId: accountId,
-      accountInfo: account
-    };
   }
 }
 export default async function handler(req, res) {
@@ -249,7 +249,7 @@ export default async function handler(req, res) {
         if (!params.address || !params.password) {
           return res.status(400).json({
             success: false,
-            error: "Missing 'address' or 'password' parameters. Example: { action: 'token', address: 'user@domain.com', password: 'xyz' }"
+            error: "Missing 'address' or 'password' parameters."
           });
         }
         result = await api.token(params);
@@ -258,7 +258,7 @@ export default async function handler(req, res) {
         if (!params.token) {
           return res.status(400).json({
             success: false,
-            error: "Missing 'token' parameter. Example: { action: 'message', token: 'jwt-token', page: 1 }"
+            error: "Missing 'token' parameter."
           });
         }
         result = await api.message(params);
@@ -267,7 +267,7 @@ export default async function handler(req, res) {
         if (!params.messageId || !params.token) {
           return res.status(400).json({
             success: false,
-            error: "Missing 'messageId' or 'token' parameters. Example: { action: 'message_by_id', messageId: '12345', token: 'jwt-token' }"
+            error: "Missing 'messageId' or 'token' parameters."
           });
         }
         result = await api.message_by_id(params);
@@ -279,7 +279,7 @@ export default async function handler(req, res) {
         if (!params.accountId || !params.token) {
           return res.status(400).json({
             success: false,
-            error: "Missing 'accountId' or 'token' parameters. Example: { action: 'delete_account', accountId: 'id-akun', token: 'jwt-token' }"
+            error: "Missing 'accountId' or 'token' parameters."
           });
         }
         result = await api.delete_account(params);
@@ -288,7 +288,7 @@ export default async function handler(req, res) {
         if (!params.messageId || !params.token) {
           return res.status(400).json({
             success: false,
-            error: "Missing 'messageId' or 'token' parameters. Example: { action: 'delete_message', messageId: '12345', token: 'jwt-token' }"
+            error: "Missing 'messageId' or 'token' parameters."
           });
         }
         result = await api.delete_message(params);
@@ -301,9 +301,8 @@ export default async function handler(req, res) {
     }
     return res.status(status).json(result);
   } catch (error) {
-    console.error(`API Handler Error:`, error.message);
-    const errorStatus = error.status;
-    const status = errorStatus || (error.message.includes("HTTP 4") ? 400 : error.message.includes("HTTP 5") ? 500 : 500);
+    console.error(`✖ API Error:`, error.message);
+    const status = error.status || 500;
     return res.status(status).json({
       success: false,
       error: error.message,

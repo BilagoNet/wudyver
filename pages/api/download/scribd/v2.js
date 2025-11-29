@@ -6,6 +6,7 @@ import {
   CookieJar
 } from "tough-cookie";
 import qs from "qs";
+import SpoofHead from "@/lib/spoof-head";
 class FreePdfDownloader {
   constructor() {
     this.jar = new CookieJar();
@@ -18,7 +19,8 @@ class FreePdfDownloader {
         "sec-ch-ua": '"Chromium";v="127", "Not)A;Brand";v="99"',
         "sec-ch-ua-mobile": "?1",
         "sec-ch-ua-platform": '"Android"',
-        "upgrade-insecure-requests": "1"
+        "upgrade-insecure-requests": "1",
+        ...SpoofHead()
       }
     }));
     this.baseUrl = "https://freepdfdownloader.com";
@@ -116,21 +118,12 @@ class FreePdfDownloader {
       console.log("[LOG] Upload sukses!");
       return {
         status: true,
-        file: {
-          name: finalName,
-          size: fileData.size,
-          mime: fileData.mimetype
-        },
-        scribd_source: {
-          title: apiRes?.name,
-          host: apiRes?.host
-        },
-        upload_result: {
-          url: uploadRes?.url,
-          direct_url: uploadRes?.direct_url,
-          delete_key: uploadRes?.delete_key,
-          expiry: uploadRes?.expiry
-        }
+        name: finalName,
+        size: fileData.size,
+        mime: fileData.mimetype,
+        title: apiRes?.name,
+        host: apiRes?.host,
+        ...uploadRes
       };
     } catch (error) {
       console.log("[ERROR]", error?.message || error);

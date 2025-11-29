@@ -4,28 +4,38 @@ class TempMailClient {
   constructor({
     base = "https://api.internal.temp-mail.io/api/v3/"
   } = {}) {
-    this.base = base;
+    this.base = base.endsWith("/") ? base : base + "/";
   }
   async _call(method, path, body = null, query = {}) {
     const url = new URL(this.base + path);
-    Object.entries(query).forEach(([k, v]) => url.searchParams.append(k, v));
+    Object.entries(query).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) url.searchParams.append(k, v);
+    });
     const opts = {
       method: method,
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "User-Agent": "TempMailClient/1.0"
       }
     };
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(url, opts);
+    const text = await res.text();
+    console.log(text);
     if (!res.ok) {
-      const txt = await res.text();
-      throw new Error(`HTTP ${res.status}: ${txt}`);
+      throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
     }
-    const ct = res.headers.get("content-type") ?? "";
-    if (ct.includes("json")) return await res.json();
-    if (ct.includes("text") || ct.includes("eml")) return await res.text();
-    const ab = await res.arrayBuffer();
-    return Buffer.from(ab);
+    const ct = res.headers.get("content-type") || "";
+    if (ct.includes("json")) {
+      try {
+        return JSON.parse(text);
+      } catch {
+        return text;
+      }
+    }
+    if (ct.includes("text") || ct.includes("eml")) return text;
+    const buffer = await res.arrayBuffer();
+    return Buffer.from(buffer);
   }
   async domains() {
     return await this._call("GET", "domains");
@@ -35,28 +45,35 @@ class TempMailClient {
     domain,
     token
   } = {}) {
-    let domainList = [];
-    if (!domain) {
+    let availableDomains = ["tempmail.com"];
+    if (!domain || typeof domain !== "string" || domain.trim() === "" || !domain.includes(".")) {
       try {
-        const d = await this.domains();
-        domainList = d?.domains ?? ["tempmail.com"];
-      } catch {
-        domainList = ["tempmail.com"];
+        const resp = await this.domains();
+        if (Array.isArray(resp?.domains) && resp.domains.length > 0) {
+          availableDomains = resp.domains.map(d => d.name).filter(n => n && typeof n === "string");
+        }
+      } catch (err) {
+        console.warn("Failed to fetch domains, using fallback:", err.message);
+      }
+      if (availableDomains.length > 0) {
+        domain = availableDomains[Math.floor(Math.random() * availableDomains.length)];
       }
     }
-    const finalDomain = domain || domainList[Math.floor(Math.random() * domainList.length)];
+    if (typeof domain !== "string" || !domain.includes(".")) {
+      throw new Error("Domain must be a valid string (e.g. tempmail.com)");
+    }
     const payload = {
-      name: name ?? `user${Math.floor(Math.random() * 99999)}`,
-      domain: finalDomain,
-      token: token ?? `token_${randomStr()}`
+      name: (name && typeof name === "string" ? name.trim() : null) || `user${Math.floor(Math.random() * 999999)}`,
+      domain: domain.trim(),
+      token: token || `token_${randomStr()}`
     };
     return await this._call("POST", "email/new", payload);
   }
   async messages({
     email
   } = {}) {
-    if (!email) throw new Error("email required");
-    return await this._call("GET", `email/${email}/messages`);
+    if (!email || typeof email !== "string") throw new Error("email required and must be string");
+    return await this._call("GET", `email/${encodeURIComponent(email)}/messages`);
   }
   async source({
     messageId
@@ -68,10 +85,9 @@ class TempMailClient {
     messageId
   } = {}) {
     if (!messageId) throw new Error("messageId required");
-    const buf = await this._call("GET", `message/${messageId}/source_code`, null, {
+    return await this._call("GET", `message/${messageId}/source_code`, null, {
       download: 1
     });
-    return buf;
   }
 }
 export default async function handler(req, res) {
@@ -84,32 +100,33 @@ export default async function handler(req, res) {
     let result;
     let status = 200;
     switch (action) {
-      case "random":
+      case "create":
         result = await api.create();
         status = 201;
         break;
       case "custom":
-        if (!params.alias) {
+        if (!params.alias || typeof params.alias !== "string") {
           return res.status(400).json({
             success: false,
-            error: "Missing 'alias'. Example: { alias: 'john', domain: 'tempmail.com' }"
+            error: "Missing or invalid 'alias' (must be string)"
           });
         }
+        const customDomain = typeof params.domain === "string" && params.domain.includes(".") ? params.domain.trim() : undefined;
         result = await api.create({
-          name: params.alias,
-          domain: params.domain
+          name: params.alias.trim(),
+          domain: customDomain
         });
         status = 201;
         break;
       case "messages":
-        if (!params.email) {
+        if (!params.email || typeof params.email !== "string") {
           return res.status(400).json({
             success: false,
-            error: "Missing 'email'. Example: { email: 'abc@tempmail.com' }"
+            error: "Missing or invalid 'email'"
           });
         }
         result = await api.messages({
-          email: params.email
+          email: params.email.trim()
         });
         break;
       case "domains":
@@ -146,12 +163,15 @@ export default async function handler(req, res) {
       default:
         return res.status(400).json({
           success: false,
-          error: "Invalid action. Use: random, custom, messages, domains, source, download"
+          error: "Invalid action. Available: create, custom, messages, domains, source, download"
         });
     }
-    return res.status(status).json(result);
+    return res.status(status).json({
+      success: true,
+      data: result
+    });
   } catch (error) {
-    console.error("API Error:", error.message);
+    console.error("TempMail API Error:", error.message);
     const httpStatus = error.message.includes("HTTP 4") ? 400 : 500;
     return res.status(httpStatus).json({
       success: false,

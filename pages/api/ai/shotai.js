@@ -779,8 +779,8 @@ class ShotAIAPI {
       const imageInputs = await this._processImageInput(imageUrl);
       console.log(`Proses: Mengunggah ${imageInputs.length} gambar...`);
       const imageIds = await this._uploadMultipleImages(imageInputs);
-      if (imageIds.length < modelData.images.min) {
-        throw new Error(`Model ${model} membutuhkan minimal ${modelData.images.min} gambar`);
+      if (imageIds.length === 0) {
+        throw new Error(`Model ${model} membutuhkan minimal 1 gambar`);
       }
       if (imageIds.length > modelData.images.max) {
         throw new Error(`Model ${model} hanya mendukung maksimal ${modelData.images.max} gambar`);
@@ -829,8 +829,8 @@ class ShotAIAPI {
         const imageInputs = await this._processImageInput(imageUrl);
         console.log(`Proses: Mengunggah ${imageInputs.length} gambar...`);
         imageIds = await this._uploadMultipleImages(imageInputs);
-        if (imageIds.length < modelData.images.min) {
-          throw new Error(`Model ${model} membutuhkan minimal ${modelData.images.min} gambar`);
+        if (imageIds.length === 0) {
+          throw new Error(`Model ${model} membutuhkan minimal 1 gambar`);
         }
         if (imageIds.length > modelData.images.max) {
           throw new Error(`Model ${model} hanya mendukung maksimal ${modelData.images.max} gambar`);

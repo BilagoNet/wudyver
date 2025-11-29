@@ -5,6 +5,7 @@ import {
 import {
   CookieJar
 } from "tough-cookie";
+import SpoofHead from "@/lib/spoof-head";
 class ScribdMenoap {
   constructor() {
     this.jar = new CookieJar();
@@ -26,7 +27,8 @@ class ScribdMenoap {
       "sec-fetch-mode": "navigate",
       "sec-fetch-site": "same-origin",
       "upgrade-insecure-requests": "1",
-      "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36"
+      "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36",
+      ...SpoofHead()
     };
   }
   parse(u) {
@@ -102,16 +104,12 @@ class ScribdMenoap {
       log("Proses Selesai.");
       return {
         status: true,
-        file: {
-          name: fileName,
-          size: size,
-          mime: "application/pdf"
-        },
-        scribd_source: {
-          id: info.id,
-          slug: info.slug
-        },
-        upload_result: uploadRes
+        name: fileName,
+        size: size,
+        mime: "application/pdf",
+        id: info.id,
+        slug: info.slug,
+        ...uploadRes
       };
     } catch (error) {
       log(`Error: ${error?.message || "Unknown error"}`);

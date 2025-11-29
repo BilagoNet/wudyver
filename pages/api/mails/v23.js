@@ -258,7 +258,7 @@ export default async function handler(req, res) {
     let result;
     let status = 200;
     switch (action) {
-      case "random":
+      case "create":
         result = await api.createRandomEmail();
         status = 201;
         break;
@@ -296,7 +296,7 @@ export default async function handler(req, res) {
       default:
         return res.status(400).json({
           success: false,
-          error: "Invalid action. Use 'random', 'custom', 'messages', 'domains', or 'delete'."
+          error: "Invalid action. Use 'create', 'custom', 'messages', 'domains', or 'delete'."
         });
     }
     return res.status(status).json(result);
