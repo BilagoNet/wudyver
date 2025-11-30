@@ -78,28 +78,24 @@ class GeminiAPI {
     throw new Error(`Invalid image input type. Expected URL (string), Base64 (string), or Buffer.`);
   }
   async tryRequest(url, body) {
-    const usedKeys = [];
-    for (const decKey of this.listKey) {
-      if (usedKeys.includes(decKey)) continue;
+    let lastError = null;
+    for (const apiKey of this.listKey) {
+      const finalUrl = `${url}?key=${apiKey}`;
       try {
-        const finalUrl = `${url}?key=${decKey}`;
         const response = await axios.post(finalUrl, body, {
           headers: this.headers,
           timeout: 3e4
         });
         return response.data;
       } catch (error) {
-        const status = error.response?.status;
         const msg = error.response?.data?.error?.message || error.message;
-        console.warn(`API key failed (status ${status}): ${msg}`);
-        usedKeys.push(decKey);
-        if (![403, 429, 500, 503].includes(status)) {
-          throw new Error(`Gemini API error: ${msg} (status: ${status})`);
-        }
+        console.warn(`API key failed: ${msg}`);
+        lastError = error;
         continue;
       }
     }
-    throw new Error("All API keys failed or are rate-limited.");
+    const lastMsg = lastError?.response?.data?.error?.message || lastError?.message || "Unknown error";
+    throw new Error(`All API keys failed. Last error: ${lastMsg}`);
   }
   async chat({
     model = "gemini-2.5-flash",

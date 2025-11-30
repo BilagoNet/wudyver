@@ -1,29 +1,43 @@
+import ApiKey from "@/configs/api-key";
 import fetch from "node-fetch";
 class Gemini {
   constructor({
-    apiKey = "QUl6YVN5QklMVUtWcDNBaGR4aVM3RmtjUFFGZlM4R0d0YWJZLW40",
+    apiKeys = [],
     baseUrl = "https://generativelanguage.googleapis.com/v1beta"
   } = {}) {
     this.config = {
-      apiKey: this.decode(apiKey),
+      apiKeys: apiKeys.length > 0 ? apiKeys : ApiKey.gemini || [],
       baseUrl: baseUrl,
       headers: {
         "Content-Type": "application/json"
       }
     };
-    if (!this.config.apiKey) console.warn("[Gemini] API key missing");
-  }
-  decode(str) {
-    try {
-      return JSON.parse(Buffer.from(str, "base64").toString());
-    } catch {
-      return Buffer.from(str, "base64").toString();
+    this.currentApiKey = null;
+    if (this.config.apiKeys.length === 0) {
+      console.warn("[Gemini] No API keys available");
     }
   }
+  async executeWithFallback(fn) {
+    let lastError = null;
+    for (const apiKey of this.config.apiKeys) {
+      this.currentApiKey = apiKey;
+      console.log(`[TRY] Testing API key: ${String(apiKey).substring(0, 10)}...`);
+      try {
+        const result = await fn(this.currentApiKey);
+        console.log(`[SUCCESS] API key berfungsi`);
+        return result;
+      } catch (error) {
+        console.error(`[FAILED] API key gagal:`, error.message);
+        lastError = error;
+        continue;
+      }
+    }
+    throw new Error(lastError?.message || "Semua API key gagal atau tidak tersedia");
+  }
   async r(path, body) {
-    const url = `${this.config.baseUrl}${path}?key=${this.config.apiKey}`;
-    console.log(`[POST] ${url}`);
-    try {
+    return await this.executeWithFallback(async apiKey => {
+      const url = `${this.config.baseUrl}${path}?key=${apiKey}`;
+      console.log(`[POST] ${url}`);
       const res = await fetch(url, {
         method: "POST",
         headers: this.config.headers,
@@ -33,10 +47,7 @@ class Gemini {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       console.log("[API OK]", res.status);
       return data;
-    } catch (e) {
-      console.error("[FETCH ERR]", e.message);
-      throw e;
-    }
+    });
   }
   async _toB64(imageUrl) {
     if (!imageUrl) return null;
@@ -61,32 +72,26 @@ class Gemini {
     }
   }
   async _downloadFile(url) {
-    const fullUrl = `${url}?key=${this.config.apiKey}`;
-    console.log(`[DOWNLOAD] ${fullUrl}`);
-    try {
+    return await this.executeWithFallback(async apiKey => {
+      const fullUrl = `${url}?key=${apiKey}`;
+      console.log(`[DOWNLOAD] ${fullUrl}`);
       const res = await fetch(fullUrl);
       if (!res.ok) throw new Error(`Download failed ${res.status}`);
       const buffer = Buffer.from(await res.arrayBuffer());
       console.log(`[DOWNLOAD OK] ${buffer.length} bytes`);
       return buffer;
-    } catch (e) {
-      console.error("[DOWNLOAD ERR]", e.message);
-      throw e;
-    }
+    });
   }
   async listModels() {
-    const url = `${this.config.baseUrl}/models?key=${this.config.apiKey}`;
-    console.log(`[GET] ${url}`);
-    try {
+    return await this.executeWithFallback(async apiKey => {
+      const url = `${this.config.baseUrl}/models?key=${apiKey}`;
+      console.log(`[GET] ${url}`);
       const res = await fetch(url);
       const data = await res.json();
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${data.error?.message || ""}`);
       console.log("[MODELS] fetched successfully");
       return data;
-    } catch (e) {
-      console.error("[LIST MODELS ERR]", e.message);
-      throw e;
-    }
+    });
   }
   async chat({
     prompt,
@@ -124,10 +129,10 @@ class Gemini {
     }
   }
   async p(name) {
-    const url = `${this.config.baseUrl}/${name}?key=${this.config.apiKey}`;
-    console.log(`[POLL] ${url}`);
-    while (true) {
-      try {
+    return await this.executeWithFallback(async apiKey => {
+      const url = `${this.config.baseUrl}/${name}?key=${apiKey}`;
+      console.log(`[POLL] ${url}`);
+      while (true) {
         await new Promise(r => setTimeout(r, 2e3));
         const res = await fetch(url);
         const data = await res.json();
@@ -136,11 +141,8 @@ class Gemini {
           console.log("[POLL DONE]");
           return data;
         }
-      } catch (e) {
-        console.error("[POLL ERR]", e.message);
-        throw e;
       }
-    }
+    });
   }
   async veo({
     prompt,

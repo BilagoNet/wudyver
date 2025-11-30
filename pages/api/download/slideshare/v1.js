@@ -191,21 +191,19 @@ class SlideShare {
       }
       return {
         success: true,
-        data: {
-          info: {
-            ...metadata,
-            download_pdf: pdfUrl,
-            download_link: downloadLink
-          },
-          stats: {
-            total_slides: slides.length,
-            has_transcript: transcript.length > 0,
-            related_count: related.length
-          },
-          slides: slides,
-          transcript: transcript,
-          related: related.slice(0, 10)
-        }
+        info: {
+          ...metadata,
+          download_pdf: pdfUrl,
+          download_link: downloadLink
+        },
+        stats: {
+          total_slides: slides.length,
+          has_transcript: transcript.length > 0,
+          related_count: related.length
+        },
+        slides: slides,
+        transcript: transcript,
+        related: related.slice(0, 10)
       };
     } catch (e) {
       return {

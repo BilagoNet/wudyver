@@ -3,7 +3,7 @@ import FormData from "form-data";
 class DownloderSlides {
   constructor() {
     this.api = "https://downloderslides.com";
-    this.uploadApi = "https://put.icu/upload/";
+    this.uploadApi = "https://www.digitalofficepro.com/file-converter/assembly/upload-file.php";
     this.headers = {
       accept: "*/*",
       "accept-language": "id-ID",
@@ -92,16 +92,21 @@ class DownloderSlides {
     filename
   }) {
     try {
-      this.log(`Uploading to put.icu (${filename})...`);
-      const res = await axios.put(this.uploadApi, buffer, {
+      this.log(`Uploading to digitalofficepro.com (${filename})...`);
+      const formData = new FormData();
+      formData.append("file", buffer, filename);
+      const res = await axios.post(this.uploadApi, formData, {
         headers: {
-          Accept: "application/json",
-          "X-File-Name": filename,
-          "Content-Type": "application/octet-stream"
+          ...formData.getHeaders(),
+          Accept: "application/json"
         }
       });
-      this.log(`Upload successful: ${res?.data?.url || "N/A"}`);
-      return res?.data;
+      const downloadUrl = `https://s3.us-west-2.amazonaws.com/temp.digitalofficepro.com/${res.data}`;
+      this.log(`Upload successful: ${downloadUrl}`);
+      return {
+        url: downloadUrl,
+        raw_response: res.data
+      };
     } catch (err) {
       console.error(`[ERROR] upload:`, err?.message || err);
       throw err;

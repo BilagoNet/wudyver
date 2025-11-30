@@ -747,6 +747,8 @@ export default function handler(req, res) {
     { path: "/api/ai/code12", name: "Code12", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/ai/imgeditor", name: "Imgeditor", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/ai/photoready", name: "Photoready", params: [{ "name": "prompt", "in": "query", "required": false }], },
+    { path: "/api/ai/publicai", name: "Publicai", params: [{ "name": "prompt", "in": "query", "required": false }], },
+    { path: "/api/ai/deep-nostalgia", name: "Deep-nostalgia", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/anime/baca-komik/v1", name: "V1", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/anime/baca-komik/v2", name: "V2", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/anime/baca-komik/v3", name: "V3", params: [{ "name": "prompt", "in": "query", "required": false }], },

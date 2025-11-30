@@ -1,9 +1,10 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
+import FormData from "form-data";
 class RegemSlideShare {
   constructor() {
     this.api = "https://internal-services.2api.in/slideshare";
-    this.uploadApi = "https://put.icu/upload/";
+    this.uploadApi = "https://www.digitalofficepro.com/file-converter/assembly/upload-file.php";
     this.headers = {
       Accept: "*/*",
       "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Mobile Safari/537.36",
@@ -68,16 +69,21 @@ class RegemSlideShare {
     filename
   }) {
     try {
-      this.log(`Uploading to put.icu (${filename})...`);
-      const res = await axios.put(this.uploadApi, buffer, {
+      this.log(`Uploading to digitalofficepro.com (${filename})...`);
+      const formData = new FormData();
+      formData.append("file", buffer, filename);
+      const res = await axios.post(this.uploadApi, formData, {
         headers: {
-          Accept: "application/json",
-          "X-File-Name": filename,
-          "Content-Type": "application/octet-stream"
+          ...formData.getHeaders(),
+          Accept: "application/json"
         }
       });
-      this.log(`Upload successful: ${res?.data?.url || "N/A"}`);
-      return res?.data;
+      const downloadUrl = `https://s3.us-west-2.amazonaws.com/temp.digitalofficepro.com/${res.data}`;
+      this.log(`Upload successful: ${downloadUrl}`);
+      return {
+        url: downloadUrl,
+        raw_response: res.data
+      };
     } catch (err) {
       console.error(`[ERROR] upload:`, err?.message || err);
       throw err;
