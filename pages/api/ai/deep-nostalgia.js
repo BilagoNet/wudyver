@@ -317,6 +317,9 @@ class DeepNostalgiaAI {
       console.log("Proses: Tugas txt2video berhasil dibuat.");
       return {
         ...response.data,
+        task_id: response.data?.request_id,
+        model: model,
+        type: payload.generateType,
         key: currentKey
       };
     } catch (error) {
@@ -376,6 +379,9 @@ class DeepNostalgiaAI {
       console.log("Proses: Tugas img2video berhasil dibuat.");
       return {
         ...response.data,
+        task_id: response.data?.request_id,
+        model: model,
+        type: payload.generateType,
         key: currentKey
       };
     } catch (error) {
@@ -429,6 +435,9 @@ class DeepNostalgiaAI {
       console.log("Proses: Tugas img2img berhasil dibuat.");
       return {
         ...response.data,
+        task_id: response.data?.request_id,
+        model: model,
+        type: payload.generateType,
         key: currentKey
       };
     } catch (error) {
