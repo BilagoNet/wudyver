@@ -1,169 +1,203 @@
-import axios from "axios";
+import fetch from "node-fetch";
 import crypto from "crypto";
 class UndressAI {
   constructor() {
     this.apiKey = "AIzaSyD_omM03MyUQdBNAQ3lW0RzjRS5x29GDnM";
+    this.backendHosts = ["https://awh5tmpjds.us-east-1.awsapprunner.com"];
+    this.activeBackend = null;
+    this.maskHost = "https://mkv2.undressaitools.net";
+    this.genHost = "https://igv2.undressaitools.net";
     this.authUrl = "https://identitytoolkit.googleapis.com/v1/accounts";
-    this.apiHosts = ["https://kkz3mmrmm6.us-east-1.awsapprunner.com", "https://awh5tmpjds.us-east-1.awsapprunner.com"];
-    this.apiUrl = this.apiHosts[Math.floor(Math.random() * this.apiHosts.length)];
-    this.maskUrl = "https://mkv2.undressaitools.net";
-    this.genUrl = "https://igv2.undressaitools.net";
-    this.headers = {
+    this.basicAuth = "Basic cG9ybmdlbjpwb3JuZ2Vu";
+    this.commonHeaders = {
       "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36",
+      Accept: "application/json, text/plain, */*",
       "Accept-Language": "id-ID",
       Origin: "https://undressaitools.net",
       Referer: "https://undressaitools.net/",
-      "x-client-version": "Chrome/JsCore/10.12.1/FirebaseCore-web",
-      "x-firebase-gmpid": "1:786150664182:web:f2c1c95933d234095a09d7",
       "sec-ch-ua": '"Chromium";v="127", "Not)A;Brand";v="99", "Microsoft Edge Simulate";v="127", "Lemur";v="127"',
       "sec-ch-ua-mobile": "?1",
-      "sec-ch-ua-platform": '"Android"'
+      "sec-ch-ua-platform": '"Android"',
+      "Sec-Fetch-Dest": "empty",
+      "Sec-Fetch-Mode": "cors",
+      "Sec-Fetch-Site": "cross-site"
     };
-    this.basicAuth = "Basic cG9ybmdlbjpwb3JuZ2Vu";
   }
   log(msg) {
-    console.log(`[UndressAI] ${new Date().toLocaleTimeString()} -> ${msg}`);
+    console.log(`[UndressAI] ${new Date().toLocaleTimeString("id-ID")} -> ${msg}`);
   }
   randHex(len) {
     return crypto.randomBytes(len).toString("hex");
   }
-  genFp(uid) {
-    const a = Math.floor(Math.random() * 9e15) + 1e15;
-    const combined = uid + a.toString();
-    const hash = crypto.createHash("md5").update(combined).digest("hex");
-    return `${a}_${hash}`;
+  md5(str) {
+    return crypto.createHash("md5").update(str).digest("hex");
   }
-  async sign() {
-    try {
-      const email = `${this.randHex(8)}-${this.randHex(4)}@emailhook.site`;
-      const password = this.randHex(12) + "Aa1";
-      this.log(`Signing up: ${email}`);
-      const res = await axios.post(`${this.authUrl}:signUp?key=${this.apiKey}`, {
+  genBaseFingerprint() {
+    let result = "";
+    for (let i = 0; i < 16; i++) result += Math.floor(Math.random() * 10);
+    return result;
+  }
+  async stepGuest(baseFp) {
+    this.log(`1. Init Guest (FP: ${baseFp})...`);
+    for (const host of this.backendHosts) {
+      try {
+        const url = `${host}/guest?fingerprint=${baseFp}`;
+        const res = await fetch(url, {
+          method: "GET",
+          headers: {
+            ...this.commonHeaders,
+            Authorization: this.basicAuth,
+            Accept: "*/*"
+          }
+        });
+        if (res.ok) {
+          const text = await res.text();
+          console.log(text);
+          this.activeBackend = host;
+          this.log(`   ✅ Connected: ${host}`);
+          return text;
+        }
+      } catch (e) {}
+    }
+    throw new Error("Backend Init Failed");
+  }
+  async stepMask(guestId, b64) {
+    this.log("2. Generating Mask...");
+    const taskId = this.randHex(16);
+    const res = await fetch(`${this.maskHost}/mask`, {
+      method: "POST",
+      headers: {
+        ...this.commonHeaders,
+        Authorization: this.basicAuth,
+        "Content-Type": "application/json",
+        "Sec-Fetch-Site": "same-site"
+      },
+      body: JSON.stringify({
+        task_id: taskId,
+        image_base64: `data:image/jpeg;base64,${b64}`,
+        user_id: guestId,
+        operation: "undress",
+        continent: "NA",
+        country: "US"
+      })
+    });
+    if (!res.ok) throw new Error(`Mask Error: ${res.statusText}`);
+    const data = await res.json();
+    return {
+      tid: data.task_id,
+      mask: data.mask_base64,
+      orig: data.image_base64
+    };
+  }
+  async stepFirebaseAuth() {
+    this.log("3. Firebase SignUp...");
+    const email = `${this.randHex(8)}-${this.randHex(4)}@emailhook.site`;
+    const password = `${this.randHex(10)}Aa1`;
+    const res = await fetch(`${this.authUrl}:signUp?key=${this.apiKey}`, {
+      method: "POST",
+      headers: {
+        ...this.commonHeaders,
+        "Content-Type": "application/json",
+        "x-client-version": "Chrome/JsCore/10.12.1/FirebaseCore-web",
+        "x-firebase-gmpid": "1:786150664182:web:f2c1c95933d234095a09d7",
+        Accept: "*/*"
+      },
+      body: JSON.stringify({
         returnSecureToken: true,
         email: email,
         password: password,
         clientType: "CLIENT_TYPE_WEB"
-      }, {
-        headers: this.headers
-      });
-      return res?.data;
-    } catch (e) {
-      this.log(`Sign Error: ${e.message}`);
-      return null;
-    }
+      })
+    });
+    if (!res.ok) throw new Error(`Auth Error: ${res.statusText}`);
+    const data = await res.json();
+    fetch(`${this.authUrl}:lookup?key=${this.apiKey}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        idToken: data.idToken
+      })
+    }).catch(() => {});
+    return {
+      uid: data.localId,
+      email: data.email
+    };
   }
-  async lookup(idToken) {
-    try {
-      this.log("Lookup account...");
-      const res = await axios.post(`${this.authUrl}:lookup?key=${this.apiKey}`, {
-        idToken: idToken
-      }, {
-        headers: this.headers
-      });
-      return res?.data?.users?.[0];
-    } catch (e) {
-      this.log(`Lookup Error: ${e.message}`);
-      return null;
-    }
-  }
-  async reg(uid, email) {
-    try {
-      this.log(`Registering to backend (${this.apiUrl})...`);
-      const fingerprint = this.genFp(uid);
-      const res = await axios.post(`${this.apiUrl}/users`, {
+  async stepBackendReg(firebaseUid, email, baseFp) {
+    if (!this.activeBackend) throw new Error("No active backend");
+    const hash = this.md5(firebaseUid + baseFp);
+    const complexFp = `${baseFp}_${hash}`;
+    this.log(`4. Backend Reg (FP: ${complexFp})...`);
+    const res = await fetch(`${this.activeBackend}/users`, {
+      method: "POST",
+      headers: {
+        ...this.commonHeaders,
+        Authorization: this.basicAuth,
+        "Content-Type": "application/json",
+        Accept: "*/*"
+      },
+      body: JSON.stringify({
         user: {
-          firebase_id: uid,
+          firebase_id: firebaseUid,
           email: email,
           product_enum: "UT",
-          browser_fingerprint: fingerprint,
+          browser_fingerprint: complexFp,
           metadata: {
             utm_source: "porndude",
             utm_content: "aiundress"
           }
         }
-      }, {
-        headers: {
-          ...this.headers,
-          Authorization: this.basicAuth,
-          "Content-Type": "application/json"
-        }
-      });
-      return res?.data?.user_id;
-    } catch (e) {
-      this.log(`Reg Error: ${e.response?.status} - ${JSON.stringify(e.response?.data)}`);
-      return null;
+      })
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Reg Error ${res.status}: ${txt}`);
     }
+    const data = await res.json();
+    console.log(JSON.stringify(data, null, 2));
+    return data.user_id;
   }
-  async bal(userId) {
+  async stepCheckBalance(userId) {
+    this.log("5. Checking Balance...");
     try {
-      this.log(`Checking balance: ${userId}`);
-      const res = await axios.get(`${this.apiUrl}/balance`, {
-        params: {
-          user_id: userId
-        },
+      const urlBal = `${this.activeBackend}/balance?user_id=${userId}`;
+      const resBal = await fetch(urlBal, {
+        method: "GET",
         headers: {
-          ...this.headers,
+          ...this.commonHeaders,
           Authorization: this.basicAuth,
           "X-Client": "fantasy-new"
         }
       });
-      const data = res?.data || [];
-      const gem = data.find(x => x.amount >= 0) || {};
-      return gem.amount ?? -1;
+      const dataBal = await resBal.json();
+      const urlUser = `${this.activeBackend}/users?user_id=${userId}`;
+      await fetch(urlUser, {
+        method: "GET",
+        headers: {
+          ...this.commonHeaders,
+          Authorization: this.basicAuth,
+          "X-Client": "fantasy-new"
+        }
+      });
+      const gem = Array.isArray(dataBal) ? dataBal.find(x => x.amount >= 0) : null;
+      return gem ? gem.amount : -1;
     } catch (e) {
-      this.log(`Bal Error: ${e.message}`);
       return -1;
     }
   }
-  async processImg(input) {
-    try {
-      if (Buffer.isBuffer(input)) return input.toString("base64");
-      if (typeof input === "string") {
-        if (input.startsWith("http")) {
-          this.log("Fetching image...");
-          const r = await axios.get(input, {
-            responseType: "arraybuffer"
-          });
-          return Buffer.from(r.data).toString("base64");
-        }
-        return input.replace(/^data:image\/\w+;base64,/, "");
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
-  }
-  async mask(userId, b64) {
-    try {
-      this.log("Generating mask...");
-      const taskId = this.randHex(16);
-      const res = await axios.post(`${this.maskUrl}/mask`, {
-        task_id: taskId,
-        image_base64: `data:image/jpeg;base64,${b64}`,
-        user_id: userId,
-        operation: "undress",
-        continent: "NA",
-        country: "US"
-      }, {
-        headers: {
-          ...this.headers,
-          Authorization: this.basicAuth
-        }
-      });
-      return {
-        tid: res?.data?.task_id || taskId,
-        mask: res?.data?.mask_base64,
-        orig: res?.data?.image_base64
-      };
-    } catch (e) {
-      this.log(`Mask Error: ${e.message}`);
-      throw e;
-    }
-  }
-  async exec(p) {
-    try {
-      this.log("Executing undress...");
-      const res = await axios.post(`${this.genUrl}/undress_get_resuls`, {
+  async stepExec(p) {
+    this.log("6. Executing Undress...");
+    const res = await fetch(`${this.genHost}/undress_get_resuls`, {
+      method: "POST",
+      headers: {
+        ...this.commonHeaders,
+        Authorization: this.basicAuth,
+        "Content-Type": "application/json",
+        "Sec-Fetch-Site": "same-site"
+      },
+      body: JSON.stringify({
         uiid: p.tid,
         uid: p.uid,
         masks: p.mask,
@@ -175,19 +209,32 @@ class UndressAI {
         product: "UT",
         image_format: "base64",
         prompt: p.prompt || "",
-        watermark: "",
+        watermark: "ai1",
         quality: "low"
-      }, {
-        headers: {
-          ...this.headers,
-          Authorization: this.basicAuth
+      })
+    });
+    if (!res.ok) throw new Error(`Exec Error: ${res.statusText}`);
+    const data = await res.json();
+    if (data.code === 6100) return data.data;
+    throw new Error(data.msg || "Generation Failed");
+  }
+  async processImg(input) {
+    try {
+      if (Buffer.isBuffer(input)) return input.toString("base64");
+      if (typeof input === "string") {
+        if (input.startsWith("http")) {
+          this.log("Fetching image...");
+          const r = await fetch(input);
+          if (!r.ok) throw new Error("Failed to fetch image");
+          const ab = await r.arrayBuffer();
+          return Buffer.from(ab).toString("base64");
         }
-      });
-      if (res?.data?.code === 6100) return res.data.data;
-      throw new Error(res?.data?.msg || "Gen Failed");
+        return input.replace(/^data:image\/\w+;base64,/, "");
+      }
+      return null;
     } catch (e) {
-      this.log(`Exec Error: ${e.message}`);
-      throw e;
+      this.log(`Img Process Error: ${e.message}`);
+      return null;
     }
   }
   async generate({
@@ -195,38 +242,39 @@ class UndressAI {
     imageUrl,
     ...rest
   }) {
-    let user = null;
-    let tryCount = 0;
-    while (!user && tryCount < 5) {
-      tryCount++;
-      this.log(`--- Account Attempt #${tryCount} ---`);
-      const s = await this.sign();
-      if (!s?.localId) continue;
-      const l = await this.lookup(s.idToken);
-      if (!l) continue;
-      const uid = await this.reg(s.localId, s.email);
-      if (!uid) continue;
-      const c = await this.bal(uid);
-      this.log(`Credit: ${c}`);
-      if (c >= 0) user = {
-        uid: uid,
-        email: s.email
-      };
-    }
-    if (!user) throw new Error("Failed to get valid account");
+    const baseFp = this.genBaseFingerprint();
+    const guestId = await this.stepGuest(baseFp);
     const b64 = await this.processImg(imageUrl);
-    if (!b64) throw new Error("Bad Image");
-    const m = await this.mask(user.uid, b64);
-    const finalB64 = await this.exec({
-      tid: m.tid,
-      uid: user.uid,
-      mask: m.mask,
-      orig: m.orig || `data:image/jpeg;base64,${b64}`,
+    if (!b64) throw new Error("Invalid Image");
+    const maskData = await this.stepMask(guestId, b64);
+    let userBackendId = null;
+    let tryCount = 0;
+    while (!userBackendId && tryCount < 3) {
+      tryCount++;
+      try {
+        const {
+          uid,
+          email
+        } = await this.stepFirebaseAuth();
+        userBackendId = await this.stepBackendReg(uid, email, baseFp);
+        const bal = await this.stepCheckBalance(userBackendId);
+        this.log(`Credit: ${bal}`);
+        if (bal < 0) userBackendId = null;
+      } catch (err) {
+        this.log("Account retry...");
+      }
+    }
+    if (!userBackendId) throw new Error("Failed to create valid account");
+    const finalB64 = await this.stepExec({
+      tid: maskData.tid,
+      uid: userBackendId,
+      mask: maskData.mask,
+      orig: maskData.orig,
       prompt: prompt,
       ...rest
     });
-    const buffer = Buffer.from(finalB64, "base64");
-    return buffer;
+    const cleanB64 = finalB64.replace(/^data:image\/\w+;base64,/, "");
+    return Buffer.from(cleanB64, "base64");
   }
 }
 export default async function handler(req, res) {
