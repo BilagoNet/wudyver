@@ -60,6 +60,7 @@ export default function handler(req, res) {
     { path: "/api/ai/image/undress/v5", name: "V5", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/ai/image/undress/v6", name: "V6", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/ai/image/avatar-gen", name: "Avatar-gen", params: [{ "name": "prompt", "in": "query", "required": false }], },
+    { path: "/api/ai/image/mjai", name: "Mjai", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/ai/img2img/gen/v1", name: "V1", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/ai/img2img/gen/v3", name: "V3", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/ai/img2img/gen/v2", name: "V2", params: [{ "name": "prompt", "in": "query", "required": false }], },
