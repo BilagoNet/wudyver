@@ -5,6 +5,7 @@ import {
 import {
   CookieJar
 } from "tough-cookie";
+import FormData from "form-data";
 import SpoofHead from "@/lib/spoof-head";
 class ScribdMenoap {
   constructor() {
@@ -51,19 +52,29 @@ class ScribdMenoap {
     buffer,
     filename
   }) {
-    console.log(`[LOG] Uploading to put.icu (${filename})...`);
+    console.log(`[LOG] Uploading to tmpfiles.org (${filename})...`);
     try {
-      const res = await axios.put("https://put.icu/upload/", buffer, {
+      const form = new FormData();
+      form.append("file", buffer, filename);
+      const res = await axios.post("https://tmpfiles.org/api/v1/upload", form, {
         headers: {
-          Accept: "application/json",
-          "X-File-Name": filename,
-          "Content-Type": "application/octet-stream"
+          ...form.getHeaders()
         }
       });
-      return res?.data;
+      const originalURL = res.data?.data?.url;
+      const directURL = originalURL ? `https://tmpfiles.org/dl/${originalURL.split("/").slice(-2).join("/")}` : null;
+      return {
+        status: true,
+        creator: "tmpfiles-uploader",
+        result: directURL
+      };
     } catch (e) {
-      console.log(`[ERROR] Upload failed: ${e.message}`);
-      return null;
+      console.log("[WARN] Upload gagal.");
+      return {
+        status: false,
+        result: null,
+        message: e.message
+      };
     }
   }
   async download({

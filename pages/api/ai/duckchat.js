@@ -9,18 +9,20 @@ import {
 import {
   wrapper as axiosCookieJarSupport
 } from "axios-cookiejar-support";
-import SpoofHead from "@/lib/spoof-head";
+import {
+  webcrypto
+} from "crypto";
 class DuckAI {
   constructor() {
     this.apiEndpoint = "https://duckduckgo.com/duckchat/v1/chat";
     this.statusUrl = "https://duckduckgo.com/duckchat/v1/status";
     this.initialUrl = "https://duckduckgo.com/aichat";
     this.feVersionFetchUrl = "https://duckduckgo.com/?q=DuckDuckGo+AI+Chat&ia=chat&duckai=1";
-    this.userAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Mobile Safari/537.36";
-    this.secChUa = `"Lemur";v="135", "", "", "Microsoft Edge Simulate";v="135"`;
-    this.secChUaMobile = "?1";
-    this.secChUaPlatform = `"Android"`;
-    this.acceptLanguage = "id-ID,id;q=0.9";
+    this.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+    this.secChUa = `"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"`;
+    this.secChUaMobile = "?0";
+    this.secChUaPlatform = `"Windows"`;
+    this.acceptLanguage = "en-US,en;q=0.9";
     this.initialCookiesString = "ah=us-en; l=wt-wt; p=-2; dcm=3; dcs=1";
     this.requestOrigin = "https://duckduckgo.com";
     this.cookieJar = new CookieJar();
@@ -34,8 +36,7 @@ class DuckAI {
         "Sec-CH-UA": this.secChUa,
         "Sec-CH-UA-Mobile": this.secChUaMobile,
         "Sec-CH-UA-Platform": this.secChUaPlatform,
-        Origin: this.requestOrigin,
-        ...SpoofHead()
+        Origin: this.requestOrigin
       }
     });
     axiosCookieJarSupport(this.client);
@@ -100,7 +101,9 @@ class DuckAI {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>DuckDuckGo</title>
         </head>
-        <body></body>
+        <body>
+          <iframe id="jsa" src="about:blank" sandbox="allow-scripts allow-same-origin"></iframe>
+        </body>
       </html>
     `, {
       runScripts: "dangerously",
@@ -124,6 +127,8 @@ class DuckAI {
         value: undefined,
         writable: false
       });
+      window.requestAnimationFrame = callback => setTimeout(callback, 0);
+      window.cancelAnimationFrame = id => clearTimeout(id);
       const scriptEl = document.createElement("script");
       scriptEl.textContent = scriptString;
       document.body.appendChild(scriptEl);
@@ -168,9 +173,9 @@ class DuckAI {
       }
       const client_hashes = await Promise.all((hashFromDom.client_hashes || []).map(async e => {
         const t = new TextEncoder().encode(e);
-        const n = await crypto.subtle.digest("SHA-256", t);
+        const n = await webcrypto.subtle.digest("SHA-256", t);
         const r = new Uint8Array(n);
-        return btoa(String.fromCharCode(...r));
+        return Buffer.from(r).toString("base64");
       }));
       const defaultStack = "at l https://duckduckgo.com/dist/wpm.main.c2092753cfcca2df4cd1.js:1:362167\nat async https://duckduckgo.com/dist/wpm.main.c2092753cfcca2df4cd1.js:1:338979";
       const finalResult = {
@@ -184,7 +189,6 @@ class DuckAI {
         }
       };
       this.log("info", "Encoding final hash object to Base64.");
-      this.log("debug", "Final hash object:", finalResult);
       const finalResultString = JSON.stringify(finalResult);
       return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(finalResultString));
     } catch (e) {
@@ -337,10 +341,7 @@ class DuckAI {
         "sec-ch-ua-mobile": this.secChUaMobile,
         "sec-ch-ua-platform": this.secChUaPlatform
       };
-      if (vqd === null) {
-        delete chatHeaders["x-vqd-4"];
-        this.log("debug", "x-vqd-4 header removed as vqd was null.");
-      } else {
+      if (vqd) {
         chatHeaders["x-vqd-4"] = vqd;
       }
       this.log("debug", "Final chat headers:", chatHeaders);
@@ -376,8 +377,6 @@ class DuckAI {
         };
       }
       this.log("info", "Chat completed successfully.");
-      this.log("debug", `Final response length: ${finalResponse.length} characters`);
-      this.log("debug", "Response preview:", finalResponse.substring(0, 100) + (finalResponse.length > 100 ? "..." : ""));
       return {
         result: finalResponse,
         model: model,
@@ -396,16 +395,17 @@ export default async function handler(req, res) {
   const params = req.method === "GET" ? req.query : req.body;
   if (!params.prompt) {
     return res.status(400).json({
-      error: "Prompt are required"
+      error: "Parameter 'prompt' diperlukan"
     });
   }
+  const api = new DuckAI();
   try {
-    const duckAI = new DuckAI();
-    const response = await duckAI.chat(params);
-    return res.status(200).json(response);
+    const data = await api.chat(params);
+    return res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({
-      error: error.message || "Internal Server Error"
+    const errorMessage = error.message || "Terjadi kesalahan saat memproses.";
+    return res.status(500).json({
+      error: errorMessage
     });
   }
 }

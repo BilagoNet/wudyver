@@ -5,6 +5,7 @@ import {
 import {
   wrapper
 } from "axios-cookiejar-support";
+import FormData from "form-data";
 import apiConfig from "@/configs/apiConfig";
 class ScribdDownloader {
   constructor() {
@@ -76,15 +77,30 @@ class ScribdDownloader {
     buffer,
     filename
   }) {
-    this.log(`Uploading to put.icu (${filename})...`);
-    const res = await axios.put("https://put.icu/upload/", buffer, {
-      headers: {
-        Accept: "application/json",
-        "X-File-Name": filename,
-        "Content-Type": "application/octet-stream"
-      }
-    });
-    return res?.data;
+    console.log(`[LOG] Uploading to tmpfiles.org (${filename})...`);
+    try {
+      const form = new FormData();
+      form.append("file", buffer, filename);
+      const res = await axios.post("https://tmpfiles.org/api/v1/upload", form, {
+        headers: {
+          ...form.getHeaders()
+        }
+      });
+      const originalURL = res.data?.data?.url;
+      const directURL = originalURL ? `https://tmpfiles.org/dl/${originalURL.split("/").slice(-2).join("/")}` : null;
+      return {
+        status: true,
+        creator: "tmpfiles-uploader",
+        result: directURL
+      };
+    } catch (e) {
+      console.log("[WARN] Upload gagal.");
+      return {
+        status: false,
+        result: null,
+        message: e.message
+      };
+    }
   }
   async download({
     url,
