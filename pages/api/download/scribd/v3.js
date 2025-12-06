@@ -7,7 +7,7 @@ import {
 } from "tough-cookie";
 import FormData from "form-data";
 import SpoofHead from "@/lib/spoof-head";
-class ScribdMenoap {
+class ScribdDownloader {
   constructor() {
     this.jar = new CookieJar();
     this.client = wrapper(axios.create({
@@ -66,7 +66,7 @@ class ScribdMenoap {
       return {
         status: true,
         creator: "tmpfiles-uploader",
-        result: directURL
+        url: directURL
       };
     } catch (e) {
       console.log("[WARN] Upload gagal.");
@@ -138,7 +138,7 @@ export default async function handler(req, res) {
       error: "Parameter 'url' diperlukan"
     });
   }
-  const api = new ScribdMenoap();
+  const api = new ScribdDownloader();
   try {
     const data = await api.download(params);
     return res.status(200).json(data);

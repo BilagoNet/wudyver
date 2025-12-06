@@ -91,7 +91,7 @@ class ScribdDownloader {
       return {
         status: true,
         creator: "tmpfiles-uploader",
-        result: directURL
+        url: directURL
       };
     } catch (e) {
       console.log("[WARN] Upload gagal.");

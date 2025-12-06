@@ -1,59 +1,139 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
-class ScribdFetcher {
-  id(url) {
-    const m = url?.match(/\/(?:doc|document|embeds)\/(\d+)/);
-    return m?.[1] || null;
+class ScribdDownloader {
+  getId(url) {
+    try {
+      const match = url.match(/(?:doc|document|embeds)\/(\d+)/);
+      const id = match ? match[1] : null;
+      console.log(`[LOG] Extracted ID: ${id || "Failed"}`);
+      return id;
+    } catch (err) {
+      console.error(`[ERR] Error extracting ID: ${err.message}`);
+      return null;
+    }
   }
   async req(url) {
-    console.log(`[LOG] Fetching: ${url}`);
-    const res = await axios.get(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-      }
-    });
-    return res?.data || "";
-  }
-  extract(html, docId) {
-    const $ = cheerio.load(html);
-    const list = [];
-    $(".absimg").each((_, el) => {
-      const src = $(el).attr("src") || $(el).attr("orig") || $(el).attr("data-src");
-      src?.startsWith("http") && list.push(src);
-    });
-    let title = $("title").text() || "Unknown";
-    const scriptContent = $("script").map((_, el) => $(el).html()).get().join(" ");
-    const titleMatch = scriptContent?.match(/"title":"(.*?)"/);
-    if (titleMatch?.[1]) {
-      title = titleMatch[1];
+    try {
+      console.log(`[LOG] Fetching: ${url}`);
+      const {
+        data
+      } = await axios.get(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          Referer: "https://www.scribd.com/"
+        },
+        timeout: 15e3
+      });
+      return data;
+    } catch (err) {
+      console.error(`[ERR] Request Failed: ${url} - ${err.message}`);
+      return null;
     }
-    return {
-      id: docId,
-      title: title,
-      total_pages: list.length,
-      result: [...new Set(list)]
-    };
+  }
+  extractJsonpUrls(html) {
+    try {
+      const regex = /https?:\/\/[^"'\s]+\.jsonp/g;
+      const matches = html.match(regex) || [];
+      const unique = [...new Set(matches)];
+      console.log(`[LOG] Found ${unique.length} JSONP URLs.`);
+      return unique;
+    } catch (err) {
+      console.error(`[ERR] Regex JSONP failed: ${err.message}`);
+      return [];
+    }
+  }
+  extractAbsImages($) {
+    try {
+      const images = [];
+      $(".absimg").each((i, el) => {
+        const src = $(el).attr("src") || $(el).attr("orig") || $(el).attr("data-src");
+        if (src && src.startsWith("http")) images.push(src);
+      });
+      console.log(`[LOG] Fallback found ${images.length} images via .absimg`);
+      return [...new Set(images)];
+    } catch (err) {
+      console.error(`[ERR] Fallback absimg failed: ${err.message}`);
+      return [];
+    }
+  }
+  async processTextSequential(jsonpUrls) {
+    console.log(`[LOG] Starting Sequential Text Extraction for ${jsonpUrls.length} pages...`);
+    let fullText = "";
+    for (const url of jsonpUrls) {
+      try {
+        const rawData = await this.req(url);
+        if (!rawData) continue;
+        const cleanHtml = rawData.replace(/^[a-zA-Z0-9_.]+\(\[?"/, "").replace(/"\]?\);?$/, "").replace(/\\n/g, "").replace(/\\/g, "");
+        const $ = cheerio.load(cleanHtml);
+        let pageText = "";
+        $("span.a").each((_, el) => {
+          pageText += $(el).text() + "\n";
+        });
+        fullText += pageText + "\n\n--- PAGE BREAK ---\n\n";
+      } catch (err) {
+        console.error(`[ERR] Error processing text URL: ${url} - ${err.message}`);
+      }
+    }
+    return fullText;
   }
   async download({
     url,
-    ...rest
+    mode = "img"
   }) {
+    console.log(`[LOG] Starting Download. Mode: ${mode.toUpperCase()}`);
     try {
-      console.log(`[LOG] Starting process...`);
-      const docId = this.id(url);
-      if (!docId) throw new Error("Invalid URL or ID not found");
-      const targetUrl = `https://www.scribd.com/embeds/${docId}/content`;
+      const id = this.getId(url);
+      if (!id) throw new Error("ID not found");
+      const targetUrl = `https://www.scribd.com/embeds/${id}/content`;
       const html = await this.req(targetUrl);
-      const data = this.extract(html, docId);
-      const status = data.result?.length ? "Success" : "Failed/Empty";
-      console.log(`[LOG] Status: ${status}`);
-      console.log(`[LOG] Document: ${data.title} (${data.total_pages} Pages)`);
-      return data;
-    } catch (err) {
-      console.error(`[ERR] ${err?.message || "Unknown error"}`);
+      if (!html) throw new Error("HTML empty");
+      const $ = cheerio.load(html);
+      const title = $("title").text().replace(" - Scribd", "").trim();
+      const jsonpUrls = this.extractJsonpUrls(html);
+      let resultData = {};
+      if (mode === "txt") {
+        let textContent = "";
+        if (jsonpUrls.length > 0) {
+          textContent = await this.processTextSequential(jsonpUrls);
+        } else {
+          console.log(`[LOG] JSONP Text not found. Fallback to static HTML text.`);
+          $(".text_layer").each((_, layer) => {
+            textContent += $(layer).text() + "\n";
+          });
+        }
+        resultData = {
+          type: "text",
+          content: textContent || "No text content found."
+        };
+      } else {
+        let images = [];
+        if (jsonpUrls.length > 0) {
+          console.log(`[LOG] Using JSONP Replacement for Images.`);
+          for (const u of jsonpUrls) {
+            const imgUrl = u.replace("/pages/", "/images/").replace(".jsonp", ".jpg");
+            images.push(imgUrl);
+          }
+        } else {
+          console.log(`[LOG] Using Cheerio .absimg Fallback.`);
+          images = this.extractAbsImages($);
+        }
+        resultData = {
+          type: "images",
+          total: images.length,
+          urls: images
+        };
+      }
       return {
-        result: [],
-        error: err?.message
+        success: true,
+        id: id,
+        title: title,
+        ...resultData
+      };
+    } catch (err) {
+      console.error(`[CRITICAL] ${err.message}`);
+      return {
+        success: false,
+        error: err.message
       };
     }
   }
@@ -65,7 +145,7 @@ export default async function handler(req, res) {
       error: "Parameter 'url' diperlukan"
     });
   }
-  const api = new ScribdFetcher();
+  const api = new ScribdDownloader();
   try {
     const data = await api.download(params);
     return res.status(200).json(data);
