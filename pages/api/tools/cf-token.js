@@ -42,13 +42,13 @@ class CaptchaSolver {
         extractToken: data => data?.solution_token
       },
       v4: {
-        baseUrl: this.decode("aHR0cDovLzkxLjk5LjE1MC4yNDozMDI0L2FwaS9zb2x2ZS10dXJuc3RpbGUtbWlu"),
+        baseUrl: this.decode("aHR0cHM6Ly90dXJzaXRlLnZlcmNlbC5hcHAvYnlwYXNz"),
         method: "POST",
         defaultPayload: (url, sitekey) => ({
           url: url,
-          siteKey: sitekey
+          sitekey: sitekey
         }),
-        extractToken: data => data?.data
+        extractToken: data => data?.token
       }
     };
     this.bases = ["v1", "v2", "v3", "v4"];

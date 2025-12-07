@@ -1,186 +1,159 @@
 import axios from "axios";
 import apiConfig from "@/configs/apiConfig";
-class AiDeepNude {
+class DeepNudes {
   constructor() {
-    this.baseApi = "https://api.ai-deep-nude.com";
+    this.base = "https://api.deep-nudes.com";
     this.mailApi = `https://${apiConfig.DOMAIN_URL}/api/mails/v9`;
     this.headers = {
       accept: "*/*",
       "accept-language": "id-ID",
       "content-type": "application/json",
-      origin: "https://ai-deep-nude.com",
-      referer: "https://ai-deep-nude.com/",
-      "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36",
-      priority: "u=1, i"
+      origin: "https://deep-nudes.com",
+      referer: "https://deep-nudes.com/",
+      "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36"
     };
-    this.cookies = "";
   }
   log(msg) {
-    console.log(`[${new Date().toLocaleTimeString()}] > ${msg}`);
+    console.log(`[DeepNudes] ${new Date().toLocaleTimeString()} -> ${msg}`);
   }
-  sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-  async procImg(source) {
+  async img(input) {
     try {
-      this.log("Processing image source...");
-      let buffer;
-      let mime = "image/jpeg";
-      if (Buffer.isBuffer(source)) {
-        buffer = source;
-      } else if (typeof source === "string") {
-        if (source.startsWith("http")) {
-          const res = await axios.get(source, {
+      if (Buffer.isBuffer(input)) return input.toString("base64");
+      if (typeof input === "string") {
+        if (input.startsWith("http")) {
+          this.log("Fetching image url...");
+          const buf = await axios.get(input, {
             responseType: "arraybuffer"
           });
-          buffer = Buffer.from(res.data);
-          const contentType = res.headers["content-type"];
-          if (contentType) mime = contentType;
-        } else if (source.startsWith("data:image")) {
-          return source;
-        } else {
-          buffer = Buffer.from(source, "base64");
+          return Buffer.from(buf?.data).toString("base64");
         }
-      } else {
-        throw new Error("Invalid image format");
+        return input.replace(/^data:image\/\w+;base64,/, "");
       }
-      return `data:${mime};base64,${buffer.toString("base64")}`;
+      return null;
     } catch (e) {
-      throw new Error(`Image processing failed: ${e.message}`);
+      throw new Error(`Image process failed: ${e.message}`);
     }
   }
-  async mkMail() {
+  async mail() {
+    this.log("Creating temp email...");
     try {
-      this.log("Creating temp email...");
-      const {
-        data
-      } = await axios.get(`${this.mailApi}?action=create`);
-      const email = data?.email || data?.data?.email;
-      if (!email) throw new Error("Failed to create email");
+      const res = await axios.get(`${this.mailApi}?action=create`);
+      const email = res?.data?.email || res?.data;
+      if (!email) throw new Error("Empty email response");
       this.log(`Email created: ${email}`);
       return email;
     } catch (e) {
-      this.log(`Create mail error: ${e.message}`);
-      throw e;
+      throw new Error(`Mail create error: ${e.message}`);
     }
   }
-  async reqLink(email) {
+  async send(email) {
+    this.log("Requesting magic link...");
     try {
-      this.log(`Requesting magic link for ${email}...`);
-      await axios.post(`${this.baseApi}/auth/magic-link`, {
+      await axios.post(`${this.base}/auth/magic-link`, {
         email: email
       }, {
         headers: this.headers
       });
-      this.log("Magic link request sent.");
-      return true;
+      this.log("Magic link sent.");
     } catch (e) {
-      this.log(`Req link error: ${e.message}`);
-      throw e;
+      throw new Error(`Auth req error: ${e.response?.statusText || e.message}`);
     }
   }
-  async getUrl(email) {
-    this.log("Polling for verification email...");
-    let attempts = 0;
-    const max = 60;
-    while (attempts < max) {
+  async poll(email) {
+    this.log("Polling for OTP/Link...");
+    let retries = 0;
+    const maxRetries = 60;
+    while (retries < maxRetries) {
       try {
-        await this.sleep(3e3);
-        attempts++;
-        const {
-          data
-        } = await axios.get(`${this.mailApi}?action=message&email=${email}`);
-        const msgs = data?.data || [];
-        const targetMsg = msgs.find(m => m.text_content?.includes("api.ai-deep-nude.com/auth/magic-login"));
-        if (targetMsg) {
-          const match = targetMsg.text_content.match(/(https:\/\/api\.ai-deep-nude\.com\/auth\/magic-login\?token=[^\s\n]+)/);
-          if (match?.[1]) {
-            this.log("Verification link found!");
-            return match[1];
+        await new Promise(r => setTimeout(r, 3e3));
+        const res = await axios.get(`${this.mailApi}?action=message&email=${email}`);
+        const msgs = res?.data?.data || [];
+        const target = msgs.find(m => m?.text_content?.includes("/auth/magic-login"));
+        if (target) {
+          const text = target.text_content;
+          const match = text.match(/https:\/\/api\.deep-nudes\.com\/auth\/magic-login\?token=[^\s\)]+/);
+          const link = match ? match[0] : null;
+          if (link) {
+            this.log("Magic link found!");
+            return link;
           }
         }
       } catch (e) {}
+      retries++;
     }
-    throw new Error("Polling timeout: Verification email not received.");
+    throw new Error("Polling timeout: Magic link not received");
   }
-  async sign(url) {
+  async auth(link) {
+    this.log("Verifying token...");
     try {
-      this.log("Verifying token...");
-      const res = await axios.get(url, {
+      const res = await axios.get(link, {
         headers: this.headers,
         maxRedirects: 0,
         validateStatus: status => status >= 200 && status < 400
       });
-      const setCookie = res.headers["set-cookie"];
-      if (!setCookie) throw new Error("No cookies received from verification");
-      this.cookies = setCookie.map(c => c.split(";")[0]).join("; ");
-      this.log("Login successful, session captured.");
-      return true;
+      const cookies = res?.headers?.["set-cookie"];
+      if (!cookies) throw new Error("No session cookies returned");
+      const accessCookie = cookies.find(c => c.includes("accessToken"));
+      const token = accessCookie ? accessCookie.split(";")[0].split("=")[1] : null;
+      if (!token) throw new Error("AccessToken not found in cookies");
+      this.log("Authenticated.");
+      return token;
     } catch (e) {
-      this.log(`Sign error: ${e.message}`);
-      throw e;
+      throw new Error(`Login error: ${e.message}`);
+    }
+  }
+  async post(token, b64, type = "WOMAN") {
+    this.log("Sending generation request...");
+    try {
+      const payload = {
+        image: `data:image/jpeg;base64,${b64}`,
+        mask: null,
+        type: type
+      };
+      const res = await axios.post(`${this.base}/generation`, payload, {
+        headers: {
+          ...this.headers,
+          cookie: `accessToken=${token}`
+        }
+      });
+      const data = res?.data || "";
+      if (typeof data === "string" && data.length > 100) return data;
+      if (data?.image) return data.image;
+      if (!data) throw new Error("Empty data received");
+      return data;
+    } catch (e) {
+      throw new Error(`Gen error: ${e.response?.data?.message || e.message}`);
     }
   }
   async generate({
-    prompt,
     imageUrl,
-    type,
+    type = "WOMAN",
     ...rest
   }) {
     try {
-      this.log("=== Starting Task ===");
-      const email = await this.mkMail();
-      await this.reqLink(email);
-      const verifyUrl = await this.getUrl(email);
-      await this.sign(verifyUrl);
-      let payload = {};
-      if (imageUrl) {
-        this.log("Mode: Undress (Image Generation)");
-        const base64Img = await this.procImg(imageUrl);
-        payload = {
-          image: base64Img,
-          type: type || "WOMAN",
-          mask: rest.mask || null,
-          source_img: rest.source_img || "",
-          prompt: prompt || ""
-        };
-      } else {
-        this.log("Mode: Txt2Img (Prompt Generation)");
-        if (!prompt) throw new Error("Prompt is required for text-to-image mode.");
-        const allowedTypes = ["REAL_PROMPT", "HENTAI_PROMPT"];
-        const selectedType = allowedTypes.includes(type) ? type : "REAL_PROMPT";
-        payload = {
-          prompt: prompt,
-          type: selectedType
-        };
-      }
-      this.log("Sending generation request...");
-      const {
-        data
-      } = await axios.post(`${this.baseApi}/generation`, payload, {
-        headers: {
-          ...this.headers,
-          cookie: this.cookies
-        }
-      });
-      this.log("Generation completed.");
-      const resultData = typeof data === "object" ? JSON.stringify(data) : data;
-      return Buffer.from(resultData, "base64");
-    } catch (e) {
-      const errMsg = e.response?.data ? JSON.stringify(e.response.data) : e.message;
-      this.log(`Generate Error: ${errMsg}`);
-      return null;
+      const b64 = await this.img(imageUrl);
+      if (!b64) throw new Error("Invalid image input");
+      const email = await this.mail();
+      await this.send(email);
+      const link = await this.poll(email);
+      const token = await this.auth(link);
+      const resB64 = await this.post(token, b64, type);
+      const cleanB64 = resB64.replace(/^data:image\/\w+;base64,/, "");
+      return Buffer.from(cleanB64, "base64");
+    } catch (error) {
+      this.log(`Stopped: ${error.message}`);
+      throw error;
     }
   }
 }
 export default async function handler(req, res) {
   const params = req.method === "GET" ? req.query : req.body;
-  if (!params.imageUrl && !params.prompt) {
+  if (!params.imageUrl) {
     return res.status(400).json({
-      error: "Parameter 'imageUrl' atau 'prompt' diperlukan (salah satu harus ada)"
+      error: "Parameter 'imageUrl' diperlukan"
     });
   }
-  const api = new AiDeepNude();
+  const api = new DeepNudes();
   try {
     const result = await api.generate(params);
     res.setHeader("Content-Type", "image/png");

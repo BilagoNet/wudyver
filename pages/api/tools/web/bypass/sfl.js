@@ -1,219 +1,200 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import apiConfig from "@/configs/apiConfig";
-class LinkBypasser {
+class TutwuriClient {
   constructor() {
     this.cookies = [];
-    this.refererLocation = "";
-    this.rayId = "";
-    this.alias = "";
-    this.bypassResult = null;
-    this.verification = null;
+    this.refLoc = "";
+    this.bpUrl = `https://${apiConfig.DOMAIN_URL}/api/tools/cf-token`;
+    this.sKey = "0x4AAAAAAAfjzEk6sEUVcFw1";
+    this.base = "https://tutwuri.id";
   }
-  async bypass({
+  log(msg, type = "info") {
+    const t = new Date().toLocaleTimeString();
+    if (type === "error") console.error(`[${t}] [ERR] ${msg}`);
+    else console.log(`[${t}] [LOG] ${msg}`);
+  }
+  atob(s) {
+    return Buffer.from(s, "base64").toString("binary");
+  }
+  btoa(s) {
+    return Buffer.from(s, "binary").toString("base64");
+  }
+  async run({
     url
   }) {
-    console.log(`[PROCESS] Starting bypass for URL: ${url}`);
     try {
-      console.log("[PROCESS] Step 1: Getting initial page...");
-      await this.step1_getInitialPage(url);
-      console.log("[PROCESS] Step 1 completed.");
-      console.log("[PROCESS] Step 2: Redirecting with parameters...");
-      await this.step2_redirectWithParams();
-      console.log("[PROCESS] Step 2 completed.");
-      console.log("[PROCESS] Step 3: Bypassing Turnstile...");
-      await this.step3_bypassTurnstile();
-      console.log("[PROCESS] Step 3 completed.");
-      console.log("[PROCESS] Step 4: Verifying bypass...");
-      await this.step4_verify();
-      console.log("[PROCESS] Step 4 completed.");
-      console.log("[PROCESS] Step 5: Going to final destination...");
-      const finalResult = await this.step5_go();
-      console.log("[PROCESS] Step 5 completed.");
-      console.log("[PROCESS] Bypass process completed successfully.");
-      return finalResult;
-    } catch (error) {
-      console.error(`[ERROR] Bypass failed: ${error.message}`);
+      this.log(`Memulai proses untuk: ${url}`);
+      this.origin = new URL(url).origin + "/";
+      await this.page(url);
+      await this.redir();
+      await this.bypass(this.origin, this.sKey);
+      await this.verify();
+      const result = await this.go();
+      this.log("Sukses mendapatkan link tujuan.");
+      return result;
+    } catch (e) {
+      this.log(e.message, "error");
       return null;
     }
   }
-  async step1_getInitialPage(shortlink) {
+  async page(url) {
     try {
-      const res = await axios.get(shortlink, {
-        headers: this.defaultHeaders("sfl.gl")
+      this.log("Mengambil halaman awal...");
+      const res = await axios.get(url, {
+        headers: this.head(new URL(url).host)
       });
-      this.appendCookies(res.headers["set-cookie"]);
+      this.setCookies(res.headers["set-cookie"]);
       const $ = cheerio.load(res.data);
       this.rayId = $('input[name="ray_id"]').val();
       this.alias = $('input[name="alias"]').val();
-      console.log(`[DEBUG] Step 1: rayId=${this.rayId}, alias=${this.alias}`);
-    } catch (error) {
-      console.error(`[ERROR] Step 1 (getInitialPage) failed: ${error.message}`);
-      throw error;
+      if (!this.rayId || !this.alias) throw new Error("Gagal mengambil ray_id/alias.");
+    } catch (e) {
+      throw new Error(`Step Page: ${e.message}`);
     }
   }
-  async step2_redirectWithParams() {
+  async redir() {
     try {
-      const res = await axios.get("https://tutwuri.id/redirect.php", {
+      this.log("Melakukan redirect parameter...");
+      const res = await axios.get(`${this.base}/redirect.php`, {
         params: {
           ray_id: this.rayId,
           alias: this.alias
         },
         headers: {
-          ...this.defaultHeaders("tutwuri.id"),
-          cookie: this.getCookieHeader(),
-          referer: "https://sfl.gl/"
+          ...this.head("tutwuri.id"),
+          cookie: this.getCookies(),
+          referer: this.origin
         },
         maxRedirects: 0,
         validateStatus: null
       });
-      this.appendCookies(res.headers["set-cookie"]);
-      this.refererLocation = res.headers["location"];
-      console.log(`[DEBUG] Step 2: refererLocation=${this.refererLocation}`);
-    } catch (error) {
-      console.error(`[ERROR] Step 2 (redirectWithParams) failed: ${error.message}`);
-      throw error;
+      this.setCookies(res.headers["set-cookie"]);
+      this.refLoc = res.headers["location"];
+      if (!this.refLoc) throw new Error("Lokasi redirect tidak ditemukan.");
+    } catch (e) {
+      throw new Error(`Step Redir: ${e.message}`);
     }
   }
-  async step3_bypassTurnstile() {
+  async bypass(url, key) {
     try {
-      const sitekey = "0x4AAAAAAAfjzEk6sEUVcFw1";
-      const targetUrl = "https://tutwuri.id/";
-      const res = await axios.get(`https://${apiConfig.DOMAIN_URL}/api/tools/cf-token`, {
+      this.log("Bypassing Turnstile...");
+      const res = await axios.get(this.bpUrl, {
         params: {
-          sitekey: sitekey,
-          url: targetUrl
+          url: url,
+          sitekey: key
         },
         headers: {
           accept: "application/json"
         }
       });
-      if (!res.data) {
-        throw new Error(res.data.message || "Turnstile bypass API returned an error.");
+      if (res.data?.status !== "ok" || !res.data?.token) {
+        throw new Error(res.data?.message || "Gagal bypass captcha.");
       }
-      this.bypassResult = res.data;
-      console.log(`[DEBUG] Step 3: Turnstile token obtained.`);
-    } catch (error) {
-      console.error(`[ERROR] Step 3 (bypassTurnstile) failed: ${error.message}`);
-      throw error;
+      this.token = res.data.token;
+    } catch (e) {
+      throw new Error(`Step Bypass: ${e.message}`);
     }
   }
-  async step4_verify() {
+  async verify() {
     try {
-      if (!this.bypassResult || !this.bypassResult.token) {
-        throw new Error("No Turnstile token available for verification.");
-      }
-      const res = await axios.post("https://tutwuri.id/api/v1/verify", {
+      this.log("Verifikasi token...");
+      await axios.post(`${this.base}/api/v1/verify`, {
         _a: 0,
-        "cf-turnstile-response": this.bypassResult.token
+        "cf-turnstile-response": this.token
       }, {
-        headers: {
-          ...this.apiHeaders(),
-          origin: "https://tutwuri.id",
-          referer: `https://tutwuri.id/${this.refererLocation}`
-        }
+        headers: this.headApi()
       });
-      this.verification = res.data;
-      console.log(`[DEBUG] Step 4: Verification status=${this.verification.status}`);
-    } catch (error) {
-      console.error(`[ERROR] Step 4 (verify) failed: ${error.message}`);
-      throw error;
+    } catch (e) {
+      throw new Error(`Step Verify: ${e.message}`);
     }
   }
-  async step5_go() {
+  async go() {
     try {
-      const res = await axios.post("https://tutwuri.id/api/v1/go", {
+      this.log("Request link akhir (GO)...");
+      const res = await axios.post(`${this.base}/api/v1/go`, {
         key: Math.floor(Math.random() * 1e3),
         size: "2278.3408",
-        _dvc: btoa(Math.floor(Math.random() * 1e3).toString())
+        _dvc: this.btoa(String(Math.floor(Math.random() * 1e3)))
       }, {
-        headers: {
-          ...this.apiHeaders(),
-          origin: "https://tutwuri.id",
-          referer: `https://tutwuri.id/${this.refererLocation}`
-        }
+        headers: this.headApi()
       });
+      const decoded = this.dec(res.data);
+      if (!decoded) throw new Error("Gagal decode link dari response.");
       return {
         ...res.data,
-        linkGo: this.decodeUParam(res.data?.url)
+        linkGo: decoded
       };
-    } catch (error) {
-      console.error(`[ERROR] Step 5 (go) failed: ${error.message}`);
-      throw error;
+    } catch (e) {
+      throw new Error(`Step Go: ${e.message}`);
     }
   }
-  defaultHeaders(host) {
-    return {
-      authority: host,
-      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-      "accept-language": "ms-MY,ms;q=0.9,en-US;q=0.8,en;q=0.7",
-      "sec-ch-ua": '"Not A(Brand";v="8", "Chromium";v="132"',
-      "sec-ch-ua-mobile": "?1",
-      "sec-ch-ua-platform": '"Android"',
-      "sec-fetch-dest": "document",
-      "sec-fetch-mode": "navigate",
-      "sec-fetch-site": "none",
-      "sec-fetch-user": "?1",
-      "upgrade-insecure-requests": "1",
-      "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Mobile Safari/537.36"
-    };
-  }
-  apiHeaders() {
-    return {
-      authority: "tutwuri.id",
-      accept: "application/json, text/plain, */*",
-      "accept-language": "ms-MY,ms;q=0.9,en-US;q=0.8,en;q=0.7",
-      cookie: this.getCookieHeader(),
-      "sec-ch-ua": '"Not A(Brand";v="8", "Chromium";v="132"',
-      "sec-ch-ua-mobile": "?1",
-      "sec-ch-ua-platform": '"Android"',
-      "sec-fetch-dest": "empty",
-      "sec-fetch-mode": "cors",
-      "sec-fetch-site": "same-origin",
-      "user-agent": "Mozilla/50 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Mobile Safari/537.36"
-    };
-  }
-  appendCookies(cookieArr) {
-    if (!Array.isArray(cookieArr)) return;
-    const parsed = cookieArr.map(c => c.split(";")[0]);
-    this.cookies.push(...parsed);
-    console.log(`[DEBUG] Cookies appended. Current cookies count: ${this.cookies.length}`);
-  }
-  getCookieHeader() {
-    return decodeURIComponent(this.cookies.join("; "));
-  }
-  decodeUParam(fullUrl) {
-    if (!fullUrl) {
-      console.warn("[WARNING] decodeUParam received null or undefined URL.");
+  dec(data) {
+    try {
+      if (data?.url) {
+        const uVal = new URL(data.url).searchParams.get("u");
+        if (uVal) return this.atob(decodeURIComponent(uVal));
+      }
+      const keys = ["url", "redirect", "link", "target", "go", "data"];
+      for (const k of keys) {
+        if (data[k] && this.isUrl(data[k])) return data[k];
+      }
+      return null;
+    } catch (e) {
       return null;
     }
+  }
+  isUrl(s) {
     try {
-      const urlObj = new URL(fullUrl);
-      const encodedU = urlObj.searchParams.get("u");
-      if (!encodedU) {
-        throw new Error('Paramenter "u" not found in URL.');
-      }
-      return atob(decodeURIComponent(encodedU));
-    } catch (error) {
-      console.error(`[ERROR] decodeUParam failed for URL "${fullUrl}": ${error.message}`);
-      throw error;
+      return ["http:", "https:"].includes(new URL(s).protocol);
+    } catch {
+      return false;
     }
+  }
+  setCookies(arr) {
+    if (!Array.isArray(arr)) return;
+    this.cookies.push(...arr.map(c => c.split(";")[0]));
+  }
+  getCookies() {
+    return decodeURIComponent(this.cookies.join("; "));
+  }
+  head(host) {
+    return {
+      authority: host,
+      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Mobile Safari/537.36",
+      "sec-ch-ua-platform": '"Android"',
+      "sec-ch-ua-mobile": "?1"
+    };
+  }
+  headApi() {
+    return {
+      ...this.head("tutwuri.id"),
+      accept: "application/json, text/plain, */*",
+      cookie: this.getCookies(),
+      origin: this.base,
+      referer: `${this.base}/${this.refLoc}`,
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "same-origin"
+    };
   }
 }
 export default async function handler(req, res) {
   const params = req.method === "GET" ? req.query : req.body;
   if (!params.url) {
     return res.status(400).json({
-      error: "Url are required"
+      error: "Parameter 'url' diperlukan"
     });
   }
+  const api = new TutwuriClient();
   try {
-    const bypasser = new LinkBypasser();
-    const response = await bypasser.bypass(params);
-    return res.status(200).json(response);
+    const data = await api.run(params);
+    return res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({
-      error: error.message || "Internal Server Error"
+    const errorMessage = error.message || "Terjadi kesalahan saat memproses.";
+    return res.status(500).json({
+      error: errorMessage
     });
   }
 }
