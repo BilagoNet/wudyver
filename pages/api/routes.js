@@ -1452,6 +1452,7 @@ export default function handler(req, res) {
     { path: "/api/misc/tts/v34", name: "V34", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/misc/tts/v33", name: "V33", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/misc/tts/v35", name: "V35", params: [{ "name": "prompt", "in": "query", "required": false }], },
+    { path: "/api/misc/tts/v36", name: "V36", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/misc/voice/imyfone", name: "Imyfone", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/misc/voice/resembleai", name: "Resembleai", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/news/antara", name: "Antara", params: [{ "name": "prompt", "in": "query", "required": false }], },

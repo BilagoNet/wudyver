@@ -65,13 +65,8 @@ class LulaStoryClient {
       search: query || "cinta",
       page: page
     });
-    return Array.isArray(raw) ? raw.map(item => ({
-      id: item?.id ?? "0",
-      title: item?.title || "No Title",
-      video: this.makeUrl(item?.video_link, "video"),
-      thumb: this.makeUrl(item?.video_thumb, "thumb"),
-      zip: this.makeUrl(item?.video_zip)
-    })) : [];
+    console.log(raw);
+    return raw;
   }
   async by_cats({
     cat = "Latest",
@@ -81,32 +76,22 @@ class LulaStoryClient {
       cat: cat,
       page: page
     });
-    return Array.isArray(raw) ? raw.map(item => ({
-      id: item?.id ?? "0",
-      title: item?.title || "Untitled",
-      video: this.makeUrl(item?.video_link, "video"),
-      thumb: this.makeUrl(item?.video_thumb, "thumb"),
-      zip: this.makeUrl(item?.video_zip)
-    })) : [];
+    console.log(raw);
+    return raw;
   }
-  async cats() {
+  async cats({
+    cat = "Latest"
+  }) {
     const raw = await this.req("POST", "getallcategory.php", {
-      cat: "Latest"
+      cat: cat
     });
-    return Array.isArray(raw) ? raw.map(c => ({
-      id: c?.id ?? "0",
-      name: c?.category || "Unknown",
-      image: this.makeUrl(c?.image_url)
-    })) : [];
+    console.log(raw);
+    return raw;
   }
   async music() {
     const raw = await this.req("POST", "getAllMusicList.php", {});
-    return Array.isArray(raw) ? raw.map(m => ({
-      id: m?.id || crypto.randomUUID(),
-      name: m?.song_name?.trim() || "Untitled",
-      duration: m?.song_duration !== "0" ? m?.song_duration : "Unknown",
-      url: this.makeUrl(m?.song_url)
-    })) : [];
+    console.log(raw);
+    return raw;
   }
   async status({
     page = 1,
@@ -119,6 +104,7 @@ class LulaStoryClient {
       type: type,
       lang: lang
     });
+    console.log(raw);
     return Array.isArray(raw) ? raw.map(item => ({
       id: item?.id ?? "0",
       title: item?.video_url?.replace(".mp4", "") || "Untitled",
@@ -138,11 +124,8 @@ class LulaStoryClient {
     const raw = await this.req("GET", "status/default.php", {
       type: "category"
     });
-    return Array.isArray(raw) ? raw.map(c => ({
-      id: c?.id ?? "0",
-      name: c?.category || "Unknown",
-      image: this.makeUrl(c?.image_url)
-    })) : [];
+    console.log(raw);
+    return raw;
   }
   async download({
     id: videoId
@@ -150,6 +133,7 @@ class LulaStoryClient {
     const raw = await this.req("GET", "status/addDownloads.php", {
       id: videoId
     });
+    console.log(raw);
     if (Array.isArray(raw) && raw[0]) {
       const item = raw[0];
       return {
@@ -199,7 +183,7 @@ export default async function handler(req, res) {
         response = await api.by_cats(params);
         break;
       case "cats":
-        response = await api.cats();
+        response = await api.cats(params);
         break;
       case "music":
         response = await api.music();

@@ -9,7 +9,7 @@ import {
 class DramaScraper {
   constructor() {
     this.baseUrl = "https://www.dramaboxdb.com";
-    this.apiBaseUrl = "https://sapi.dramaboxdb.com/drama-box";
+    this.sansekaiUrl = "https://dramabox.sansekai.my.id/api/dramabox";
     const jar = new CookieJar();
     this.client = wrapper(axios.create({
       jar: jar,
@@ -17,37 +17,7 @@ class DramaScraper {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
       }
     }));
-    this.tokenData = {
-      token: "ZXlKMGVYQWlPaUpLVjFRaUxDSmhiR2NpT2lKSVV6STFOaUo5LmV5SnlaV2RwYzNSbGNsUjVjR1VpT2lKVVJVMVFJaXdpZFhObGNrbGtJam96TlRjME5Ua3lOemw5LjRFekRoVlRpY1FNczF6d2ZjdldXaS0zNkM2ekNsbERYWml1RTlmMHVuOXc=",
-      deviceid: "55187861-d428-42c2-845a-a96d14eb8d36",
-      androidid: "ffffffffc118ce9a06dcd189e61a564b16144f0d00000000"
-    };
-    console.log("[Info] Scraper diinisialisasi dengan dukungan cookie dan API.");
-  }
-  setTokenData(tokenData) {
-    this.tokenData = tokenData;
-  }
-  _getApiHeaders() {
-    if (!this.tokenData) {
-      throw new Error("Token data belum di-set. Gunakan setTokenData() terlebih dahulu.");
-    }
-    return {
-      "User-Agent": "okhttp/4.10.0",
-      "Accept-Encoding": "gzip",
-      "Content-Type": "application/json",
-      tn: `Bearer ${this.tokenData.token}`,
-      version: "430",
-      vn: "4.3.0",
-      cid: "DRA1000042",
-      "package-name": "com.storymatrix.drama",
-      apn: "1",
-      "device-id": this.tokenData.deviceid,
-      language: "in",
-      "current-language": "in",
-      p: "43",
-      "time-zone": "+0800",
-      "content-type": "application/json; charset=UTF-8"
-    };
+    console.log("[Info] Scraper diinisialisasi dengan dukungan cookie dan Sansekai API.");
   }
   async _fetch(url) {
     try {
@@ -60,23 +30,89 @@ class DramaScraper {
       return null;
     }
   }
-  async _apiPost(endpoint, data) {
+  async _sansekaiGet(endpoint) {
     try {
-      const headers = this._getApiHeaders();
-      const response = await axios.post(`${this.apiBaseUrl}${endpoint}`, data, {
-        headers: headers
-      });
-      return response.data;
+      const {
+        data
+      } = await axios.get(`${this.sansekaiUrl}${endpoint}`);
+      return data;
     } catch (error) {
-      console.error(`[Gagal API] Endpoint: ${endpoint} | Error: ${error.message}`);
+      console.error(`[Gagal Sansekai] Endpoint: ${endpoint} | Error: ${error.message}`);
       throw error;
+    }
+  }
+  async latest() {
+    console.log("[Proses] Mengambil drama terbaru dari Sansekai...");
+    try {
+      const result = await this._sansekaiGet("/latest");
+      console.log(`[Sukses] Data drama terbaru berhasil diambil.`);
+      return result;
+    } catch (error) {
+      console.error(`[Gagal Latest] ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+  async trending() {
+    console.log("[Proses] Mengambil drama trending dari Sansekai...");
+    try {
+      const result = await this._sansekaiGet("/trending");
+      console.log(`[Sukses] Data drama trending berhasil diambil.`);
+      return result;
+    } catch (error) {
+      console.error(`[Gagal Trending] ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+  async sansekaiSearch({
+    query
+  }) {
+    if (!query) {
+      throw new Error("Parameter 'query' wajib diisi untuk sansekaiSearch");
+    }
+    console.log(`[Proses] Mencari di Sansekai: "${query}"`);
+    try {
+      const result = await this._sansekaiGet(`/search?query=${encodeURIComponent(query)}`);
+      console.log(`[Sukses] Hasil pencarian Sansekai untuk "${query}" berhasil diambil.`);
+      return result;
+    } catch (error) {
+      console.error(`[Gagal Sansekai Search] ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+  async stream({
+    bookId,
+    episode = 1
+  }) {
+    if (!bookId) {
+      throw new Error("Parameter 'bookId' wajib diisi untuk stream");
+    }
+    console.log(`[Proses] Mengambil stream dari Sansekai - BookID: ${bookId}, Episode: ${episode}`);
+    try {
+      const result = await this._sansekaiGet(`/stream?bookId=${bookId}&episode=${episode}`);
+      console.log(`[Sukses] Data stream berhasil diambil.`);
+      return result;
+    } catch (error) {
+      console.error(`[Gagal Stream] ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
   async search({
     query
   }) {
     const searchUrl = `${this.baseUrl}/in/search?searchValue=${encodeURIComponent(query)}`;
-    console.log(`[Proses] Mencari: "${query}"`);
+    console.log(`[Proses] Mencari dengan scraper: "${query}"`);
     try {
       const html = await this._fetch(searchUrl);
       if (!html) throw new Error("HTML tidak diterima.");
@@ -206,87 +242,6 @@ class DramaScraper {
       return {};
     }
   }
-  async theater({
-    pageNo = 1,
-    index = 1,
-    channelId = 43
-  } = {}) {
-    console.log(`[Proses API] Mengambil theater list - Page: ${pageNo}`);
-    try {
-      const data = {
-        newChannelStyle: 1,
-        isNeedRank: 1,
-        pageNo: pageNo,
-        index: index,
-        channelId: channelId
-      };
-      const response = await this._apiPost("/he001/theater", data);
-      console.log(`[Sukses API] Theater list berhasil diambil.`);
-      return response.data;
-    } catch (error) {
-      console.error(`[Gagal API Theater] ${error.message}`);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-  async batch({
-    bookId,
-    index = 1
-  } = {}) {
-    if (!bookId) {
-      throw new Error("Parameter 'bookId' wajib diisi untuk action 'batch'");
-    }
-    console.log(`[Proses API] Mengambil batch data - BookID: ${bookId}, Episode: ${index}`);
-    try {
-      const data = {
-        boundaryIndex: 0,
-        comingPlaySectionId: -1,
-        index: index,
-        currencyPlaySource: "discover_new_rec_new",
-        needEndRecommend: 0,
-        currencyPlaySourceName: "",
-        preLoad: false,
-        rid: "",
-        pullCid: "",
-        loadDirection: 0,
-        startUpKey: "",
-        bookId: bookId
-      };
-      const response = await this._apiPost("/chapterv2/batch/load", data);
-      console.log(`[Sukses API] Batch data berhasil diambil.`);
-      return response.data;
-    } catch (error) {
-      console.error(`[Gagal API Batch] ${error.message}`);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-  async suggest({
-    keyword
-  } = {}) {
-    if (!keyword) {
-      throw new Error("Parameter 'keyword' wajib diisi untuk action 'suggest'");
-    }
-    console.log(`[Proses API] Mencari dengan suggest - Keyword: "${keyword}"`);
-    try {
-      const data = {
-        keyword: keyword
-      };
-      const response = await this._apiPost("/search/suggest", data);
-      console.log(`[Sukses API] Suggest list berhasil diambil.`);
-      return response.data;
-    } catch (error) {
-      console.error(`[Gagal API Suggest] ${error.message}`);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
 }
 export default async function handler(req, res) {
   const {
@@ -297,6 +252,28 @@ export default async function handler(req, res) {
   try {
     let result;
     switch (action) {
+      case "latest":
+        result = await scraper.latest();
+        break;
+      case "trending":
+        result = await scraper.trending();
+        break;
+      case "search_v2":
+        if (!params.query) {
+          return res.status(400).json({
+            error: "Parameter 'query' dibutuhkan untuk action 'search_v2'"
+          });
+        }
+        result = await scraper.sansekaiSearch(params);
+        break;
+      case "stream":
+        if (!params.bookId) {
+          return res.status(400).json({
+            error: "Parameter 'bookId' dibutuhkan untuk action 'stream'"
+          });
+        }
+        result = await scraper.stream(params);
+        break;
       case "search":
         if (!params.query) {
           return res.status(400).json({
@@ -321,28 +298,13 @@ export default async function handler(req, res) {
         }
         result = await scraper.download(params);
         break;
-      case "theater":
-        result = await scraper.theater(params);
-        break;
-      case "batch":
-        if (!params.bookId) {
-          return res.status(400).json({
-            error: "Parameter 'bookId' dibutuhkan untuk action 'batch'"
-          });
-        }
-        result = await scraper.batch(params);
-        break;
-      case "suggest":
-        if (!params.keyword) {
-          return res.status(400).json({
-            error: "Parameter 'keyword' dibutuhkan untuk action 'suggest'"
-          });
-        }
-        result = await scraper.suggest(params);
-        break;
       default:
         return res.status(400).json({
-          error: `Action tidak valid: '${action}'. Pilihan: search | detail | download | theater | batch | suggest`
+          error: `Action tidak valid: '${action}'`,
+          available_actions: {
+            sansekai_api: ["latest", "trending", "search_v2", "stream"],
+            cheerio_scraper: ["search", "detail", "download"]
+          }
         });
     }
     return res.status(200).json(result);

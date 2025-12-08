@@ -54,10 +54,10 @@ class ApiService {
     }));
   }
   async vids({
-    id,
+    slug,
     page = 1
   }) {
-    const categorySlug = id;
+    const categorySlug = slug;
     console.log(`API: Fetching videos for ${categorySlug}, page ${page}`);
     const raw = await this._req({
       method: "get",
@@ -111,9 +111,9 @@ export default async function handler(req, res) {
     let response;
     switch (action) {
       case "vids":
-        if (!params.id) {
+        if (!params.slug) {
           return res.status(400).json({
-            error: "Parameter 'id' wajib diisi untuk action 'vids'."
+            error: "Parameter 'slug' wajib diisi untuk action 'vids'."
           });
         }
         response = await api.vids(params);

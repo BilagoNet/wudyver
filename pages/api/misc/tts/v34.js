@@ -7,7 +7,7 @@ class ReadAloudTTS {
     this.getPartsUrl = `${this.baseUrl}/ttstool/getParts`;
     this.voiceCache = [];
   }
-  async list() {
+  async voice_list() {
     console.log(`[ReadAloudTTS] Mengambil daftar suara dari server...`);
     const config = {
       method: "get",
@@ -36,9 +36,9 @@ class ReadAloudTTS {
     }
     if (this.voiceCache.length === 0) {
       try {
-        await this.list();
+        await this.voice_list();
       } catch (e) {
-        console.warn("[ReadAloudTTS] Gagal fetch list voice, menggunakan input mentah.");
+        console.warn("[ReadAloudTTS] Gagal fetch voice_list voice, menggunakan input mentah.");
         return voiceInput;
       }
     }
@@ -61,7 +61,7 @@ class ReadAloudTTS {
   createSSML(text, lang = "id-ID") {
     return `<speak version="1.0" xml:lang="${lang}">${text}</speak>`;
   }
-  async create({
+  async generate({
     text,
     voice,
     lang
@@ -71,7 +71,7 @@ class ReadAloudTTS {
     }
     const selectedVoice = await this._findVoice(voice);
     const selectedLang = lang || "id-ID";
-    console.log(`[ReadAloudTTS] Create Audio... Voice: ${selectedVoice}`);
+    console.log(`[ReadAloudTTS] generate Audio... Voice: ${selectedVoice}`);
     const ssml = this.createSSML(text, selectedLang);
     const payload = [{
       voiceId: selectedVoice,
@@ -123,24 +123,24 @@ export default async function handler(req, res) {
   try {
     let response;
     switch (action) {
-      case "list":
-        response = await api.list();
+      case "voice_list":
+        response = await api.voice_list();
         return res.status(200).json({
           success: true,
           count: response.length,
           voices: response
         });
-      case "create":
+      case "generate":
         if (!params.text) {
           return res.status(400).json({
-            error: "Parameter 'text' wajib diisi untuk action 'create'."
+            error: "Parameter 'text' wajib diisi untuk action 'generate'."
           });
         }
-        response = await api.create(params);
+        response = await api.generate(params);
         return res.status(200).json(response);
       default:
         return res.status(400).json({
-          error: `Action tidak valid: ${action}. Action yang didukung: 'list', 'create'.`
+          error: `Action tidak valid: ${action}. Action yang didukung: 'voice_list', 'generate'.`
         });
     }
   } catch (error) {

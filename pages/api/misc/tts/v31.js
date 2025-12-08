@@ -34,7 +34,7 @@ class EdgeTTS {
   getId() {
     return uuidv4().replace(/-/g, "");
   }
-  async list({
+  async voice_list({
     ...rest
   } = {}) {
     const secMsGec = this.getSec();
@@ -75,7 +75,7 @@ class EdgeTTS {
       try {
         await this.voice();
       } catch (e) {
-        console.warn("[EdgeTTS] Gagal fetch list voice, mencoba menggunakan input mentah.");
+        console.warn("[EdgeTTS] Gagal fetch voice_list voice, mencoba menggunakan input mentah.");
         return voiceInput;
       }
     }
@@ -89,10 +89,10 @@ class EdgeTTS {
       console.log(`[EdgeTTS] Voice ditemukan: "${voiceInput}" -> "${foundVoice.short_name}"`);
       return foundVoice.name;
     }
-    console.warn(`[EdgeTTS] Voice "${voiceInput}" tidak ditemukan di list. Menggunakan raw input.`);
+    console.warn(`[EdgeTTS] Voice "${voiceInput}" tidak ditemukan di voice_list. Menggunakan raw input.`);
     return voiceInput;
   }
-  async create({
+  async generate({
     text,
     voice,
     rate,
@@ -106,7 +106,7 @@ class EdgeTTS {
     const selectedVolume = volume || "+0%";
     const connectId = this.getId();
     const secMsGec = this.getSec();
-    console.log(`[EdgeTTS] Create Audio... Voice: ${selectedVoice}`);
+    console.log(`[EdgeTTS] generate Audio... Voice: ${selectedVoice}`);
     const wsUrl = `${this.wssUrl}?TrustedClientToken=${this.trustedClientToken}&Sec-MS-GEC=${secMsGec}&Sec-MS-GEC-Version=1-130.0.2849.68&ConnectionId=${connectId}`;
     return new Promise((resolve, reject) => {
       const audioChunks = [];
@@ -178,22 +178,22 @@ export default async function handler(req, res) {
   try {
     let response;
     switch (action) {
-      case "list":
-        response = await api.list(params);
+      case "voice_list":
+        response = await api.voice_list(params);
         return res.status(200).json(response);
-      case "create":
+      case "generate":
         if (!params.text) {
           return res.status(400).json({
-            error: "Parameter 'text' wajib diisi untuk action 'create'."
+            error: "Parameter 'text' wajib diisi untuk action 'generate'."
           });
         }
-        const audioResult = await api.create(params);
+        const audioResult = await api.generate(params);
         res.setHeader("Content-Type", "audio/mp3");
-        res.setHeader("Content-Disposition", 'inline; filename="created_audio.mp3"');
+        res.setHeader("Content-Disposition", 'inline; filename="generated_audio.mp3"');
         return res.status(200).send(audioResult);
       default:
         return res.status(400).json({
-          error: `Action tidak valid: ${action}. Action yang didukung: 'list', 'create'.`
+          error: `Action tidak valid: ${action}. Action yang didukung: 'voice_list', 'generate'.`
         });
     }
   } catch (error) {
