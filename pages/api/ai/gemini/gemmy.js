@@ -1,6 +1,35 @@
 import axios from "axios";
 import FormData from "form-data";
 import apiConfig from "@/configs/apiConfig";
+
+function convertPcmToWav(pcmData) {
+  const buffer = new Uint8Array(pcmData);
+  const sampleRate = 24e3;
+  const channels = 1;
+  const bitsPerSample = 16;
+  const bytesPerSample = bitsPerSample / 8;
+  const dataSize = buffer.length;
+  const fileSize = 36 + dataSize;
+  const header = new ArrayBuffer(44);
+  const view = new DataView(header);
+  view.setUint32(0, 1380533830, false);
+  view.setUint32(4, fileSize, true);
+  view.setUint32(8, 1463899717, false);
+  view.setUint32(12, 1718449184, false);
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, channels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * channels * bytesPerSample, true);
+  view.setUint16(32, channels * bytesPerSample, true);
+  view.setUint16(34, bitsPerSample, true);
+  view.setUint32(36, 1684108385, false);
+  view.setUint32(40, dataSize, true);
+  const wavData = new Uint8Array(44 + dataSize);
+  wavData.set(new Uint8Array(header), 0);
+  wavData.set(buffer, 44);
+  return Buffer.from(wavData);
+}
 class VertexAI {
   constructor() {
     this.api_url = "https://firebasevertexai.googleapis.com/v1beta";
@@ -15,12 +44,13 @@ class VertexAI {
     this.model = {
       search: ["gemini-2.0-flash", "gemini-2.0-flash-001", "gemini-2.5-flash", "gemini-2.5-flash-lite-preview-06-17", "gemini-2.5-pro"],
       chat: ["gemini-1.5-flash", "gemini-1.5-flash-002", "gemini-1.5-pro", "gemini-1.5-pro-002", "gemini-2.0-flash", "gemini-2.0-flash-001", "gemini-2.0-flash-lite", "gemini-2.0-flash-lite-001", "gemini-2.5-flash", "gemini-2.5-flash-lite-preview-06-17", "gemini-2.5-pro"],
-      image: ["imagen-3.0-generate-002", "imagen-3.0-generate-001", "imagen-3.0-fast-generate-001", "imagen-3.0-capability-001", "imagen-4.0-generate-preview-06-06", "imagen-4.0-fast-generate-preview-06-06", "imagen-4.0-ultra-generate-preview-06-06"]
+      image: ["imagen-3.0-generate-002", "imagen-3.0-generate-001", "imagen-3.0-fast-generate-001", "imagen-3.0-capability-001", "imagen-4.0-generate-preview-06-06", "imagen-4.0-fast-generate-preview-06-06", "imagen-4.0-ultra-generate-preview-06-06"],
+      audio: ["gemini-2.0-flash-lite-preview-02-05", "gemini-2.5-flash-preview-tts", "gemini-2.0-flash"]
     };
   }
   async chat({
     prompt: question,
-    model = "gemini-1.5-flash",
+    model = "gemini-2.5-flash",
     system_instruction = null,
     imageUrl = null,
     search = false
@@ -116,6 +146,73 @@ class VertexAI {
       throw new Error("No valid image data found in prediction.");
     }
   }
+  async audio({
+    prompt,
+    voice = "Leda",
+    model = "gemini-2.5-flash-preview-tts",
+    thinking_budget = null
+  } = {}) {
+    if (!prompt) throw new Error("Prompt is required for audio generation");
+    const isAudioModel = this.model.audio.includes(model);
+    const isChatModel = this.model.chat.includes(model);
+    if (!isAudioModel && !isChatModel) {
+      throw new Error(`Model ${model} might not support audio generation. Try: ${this.model.audio.join(", ")}`);
+    }
+    const generationConfig = {
+      responseModalities: ["AUDIO"],
+      speechConfig: {
+        voiceConfig: {
+          prebuiltVoiceConfig: {
+            voiceName: voice
+          }
+        }
+      }
+    };
+    if (thinking_budget) {
+      generationConfig.thinkingConfig = {
+        thinkingBudget: parseInt(thinking_budget)
+      };
+    }
+    const payload = {
+      contents: [{
+        role: "user",
+        parts: [{
+          text: prompt
+        }]
+      }],
+      generationConfig: generationConfig
+    };
+    const r = await axios.post(`${this.api_url}/${this.model_url}/${model}:generateContent`, payload, {
+      headers: this.headers
+    });
+    if (r.status !== 200) throw new Error("No result found");
+    const candidate = r.data.candidates?.[0];
+    const parts = candidate?.content?.parts;
+    let audioBase64 = null;
+    if (parts) {
+      for (const part of parts) {
+        if (part.inlineData && part.inlineData.mimeType.startsWith("audio/")) {
+          audioBase64 = part.inlineData.data;
+          break;
+        }
+      }
+    }
+    if (!audioBase64) {
+      throw new Error("No audio data found in response");
+    }
+    const pcmBuffer = Buffer.from(audioBase64, "base64");
+    const wavBuffer = convertPcmToWav(pcmBuffer);
+    const catboxUrl = await this.uploadToCatbox({
+      bytesBase64Encoded: wavBuffer.toString("base64"),
+      mimeType: "audio/wav"
+    });
+    return {
+      url: catboxUrl,
+      voice: voice,
+      prompt: prompt,
+      mime: "audio/wav"
+    };
+  }
   async uploadToCatbox({
     bytesBase64Encoded,
     mimeType
@@ -129,8 +226,8 @@ class VertexAI {
     try {
       const buffer = Buffer.from(bytesBase64Encoded, "base64");
       const formData = new FormData();
-      const fileExtension = mimeType.split("/")[1] || "png";
-      formData.append("file", buffer, `image.${fileExtension}`);
+      const fileExtension = mimeType.split("/")[1] || "bin";
+      formData.append("file", buffer, `file.${fileExtension}`);
       const response = await axios.post(this.uploadUrl, formData, {
         headers: {
           ...formData.getHeaders()
@@ -141,7 +238,7 @@ class VertexAI {
       }
       return response.data?.result;
     } catch (error) {
-      throw new Error(`Error uploading image to: ${error.message}`);
+      throw new Error(`Error uploading file: ${error.message}`);
     }
   }
 }
@@ -154,7 +251,7 @@ export default async function handler(req, res) {
     return res.status(400).json({
       error: "Missing required field: action",
       required: {
-        action: "chat | image"
+        action: "chat | image | audio"
       }
     });
   }
@@ -178,9 +275,17 @@ export default async function handler(req, res) {
         }
         result = await api[action](params);
         break;
+      case "audio":
+        if (!params.prompt) {
+          return res.status(400).json({
+            error: `Missing required field: prompt (required for ${action})`
+          });
+        }
+        result = await api[action](params);
+        break;
       default:
         return res.status(400).json({
-          error: `Invalid action: ${action}. Allowed: chat | image`
+          error: `Invalid action: ${action}. Allowed: chat | image | audio`
         });
     }
     return res.status(200).json({
