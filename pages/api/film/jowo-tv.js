@@ -1,413 +1,390 @@
 import axios from "axios";
 import crypto from "crypto";
 class JowoDramaAPI {
-  constructor(auto_cache = true) {
-    this.api = {
-      base: "https://us-drama-api.pixtv.cc",
-      endpoints: {
-        init: "/Android/Users/init",
-        list: "/Android/VideoCenter/getVideoList",
-        drama: "/Android/VideoCenter/getVideoDrama",
-        get_user_info: "/Android/Users/getUserInfo"
-      }
-    };
-    this.block_map = {
-      selected: 1,
-      hot: 5,
-      new: 6,
-      male: 7,
-      female: 8,
-      original: 9
-    };
-    this.headers = {
-      "user-agent": "NB Android/1.0.0",
-      "accept-encoding": "gzip",
-      "content-type": "application/json"
-    };
-    this.user_cache = null;
-    this.device_cache = null;
-    this.cache_enabled = auto_cache;
-    if (auto_cache) {
-      console.log("Auto cache enabled");
-    }
-  }
-  async ensure_initialized() {
-    try {
-      if (this.cache_enabled && this.user_cache) {
-        console.log("Using cached session");
-        return true;
-      }
-      console.log("Initializing session...");
-      this.device_cache = this.generate_device();
-      const headers = {
-        ...this.headers,
-        aid: this.device_cache.aid,
-        gaid: this.device_cache.gaid,
-        adjustgaid: "",
+  constructor() {
+    this.cfg = {
+      baseUrl: "https://us-drama-api.pixtv.cc",
+      timeout: 6e4,
+      headers: {
+        "user-agent": "okhttp/4.12.0",
+        accept: "application/json",
+        "accept-encoding": "gzip, deflate, br",
+        "content-type": "application/json; charset=utf-8",
         channel: "google",
         source: "android",
         version: "1.0.45",
         vcode: "60",
-        language: "en",
-        ts: Math.floor(Date.now() / 1e3).toString(),
-        systemversion: this.device_cache.systemversion
-      };
-      const {
-        data
-      } = await axios.post(`${this.api.base}${this.api.endpoints.init}`, {
-        aid: this.device_cache.aid
+        language: "en"
+      },
+      endpoints: {
+        baseConfig: "/Config/getBaseConfig",
+        init: "/Android/Users/init",
+        userInfo: "/Android/Users/getUserInfo",
+        userReward: "/Android/Users/getUserRewardInfo",
+        videoList: "/Android/VideoCenter/getVideoList",
+        videoDrama: "/Android/VideoCenter/getVideoDrama",
+        videoSearch: "/Android/VideoCenter/videoSearch",
+        recEnd: "/Android/VideoCenter/getEndRecommend",
+        recNew: "/Android/VideoCenter/getNewUseRecommend",
+        recList: "/Android/VideoCenter/getRecommendList",
+        historyGet: "/Android/Users/getVideoHistory",
+        historyDel: "/Android/Users/cancelVideoHistory",
+        rackGet: "/Android/Users/getVideosRack",
+        rackSave: "/Android/Users/savaVideoRack",
+        rackDel: "/Android/Users/cancelVideoRack"
+      }
+    };
+    this.session = {
+      token: null,
+      device: this._genDevice()
+    };
+    this.client = axios.create({
+      baseURL: this.cfg.baseUrl,
+      timeout: this.cfg.timeout
+    });
+    console.log("[JowoDrama] Client initialized with device:", {
+      aid: this.session.device.aid.substring(0, 8) + "...",
+      gaid: this.session.device.gaid.substring(0, 8) + "...",
+      system: this.session.device.systemversion
+    });
+  }
+  _genDevice() {
+    const brands = {
+      samsung: [{
+        brand: "samsung",
+        model: "SM-G998B",
+        android: "14"
       }, {
-        headers: headers,
-        timeout: 1e4,
-        validateStatus: status => status < 500
+        brand: "samsung",
+        model: "SM-A546E",
+        android: "14"
+      }, {
+        brand: "samsung",
+        model: "SM-S918B",
+        android: "14"
+      }],
+      xiaomi: [{
+        brand: "Xiaomi",
+        model: "23078PND5G",
+        android: "14"
+      }, {
+        brand: "Redmi",
+        model: "23129RAA4G",
+        android: "13"
+      }, {
+        brand: "POCO",
+        model: "23124RA7EO",
+        android: "13"
+      }],
+      oppo: [{
+        brand: "OPPO",
+        model: "CPH2531",
+        android: "14"
+      }, {
+        brand: "OPPO",
+        model: "CPH2591",
+        android: "13"
+      }, {
+        brand: "realme",
+        model: "RMX3910",
+        android: "13"
+      }],
+      vivo: [{
+        brand: "vivo",
+        model: "V2250",
+        android: "13"
+      }, {
+        brand: "vivo",
+        model: "V2309",
+        android: "14"
+      }]
+    };
+    const brandKeys = Object.keys(brands);
+    const selectedBrand = brandKeys[Math.floor(Math.random() * brandKeys.length)];
+    const devices = brands[selectedBrand];
+    const device = devices[Math.floor(Math.random() * devices.length)];
+    return {
+      aid: Array.from({
+        length: 16
+      }, () => Math.random().toString(36).charAt(2)).join(""),
+      gaid: crypto.randomUUID(),
+      systemversion: `${device.brand}|${device.model}|${device.android}`
+    };
+  }
+  _headers() {
+    return {
+      ...this.cfg.headers,
+      aid: this.session.device.aid,
+      gaid: this.session.device.gaid,
+      systemversion: this.session.device.systemversion,
+      ts: Math.floor(Date.now() / 1e3).toString(),
+      token: this.session.token || ""
+    };
+  }
+  async _req(keyName, payload = {}, isRetry = false) {
+    const label = `[${keyName}]`;
+    try {
+      if (!this.session.token && keyName !== "init") {
+        console.log(`${label} No token found, auto-initializing...`);
+        await this.init();
+      }
+      const url = this.cfg.endpoints[keyName];
+      if (!url) {
+        console.error(`${label} Endpoint not found in config`);
+        throw new Error(`Endpoint '${keyName}' not found`);
+      }
+      console.log(`${label} Requesting with payload:`, JSON.stringify(payload).substring(0, 100));
+      const response = await this.client.post(url, payload, {
+        headers: this._headers()
       });
-      if (!data?.data?.token) {
-        throw new Error(`Invalid init response: ${JSON.stringify(data)}`);
+      const data = response?.data;
+      console.log(`${label} Response code: ${data?.code}, message: ${data?.msg || "OK"}`);
+      if (data?.code === 401 && !isRetry) {
+        console.warn(`${label} Token expired (401), refreshing session...`);
+        this.session.token = null;
+        await this.init();
+        return await this._req(keyName, payload, true);
       }
-      const token = data.data.token;
-      const user_info = await this.get_user_info_internal(token, headers);
-      this.user_cache = {
-        token: token,
-        headers: headers,
-        info: user_info
-      };
-      console.log("Session initialized successfully");
-      return true;
+      if (data?.code !== 200 && data?.code !== 0) {
+        console.warn(`${label} API returned non-success code: ${data?.code}`);
+      }
+      return data?.data || {};
     } catch (error) {
-      console.error("Failed to initialize session:", error.message);
-      if (error.response?.status === 401) {
-        throw new Error("Authentication failed during initialization");
-      }
-      if (error.code === "ECONNABORTED") {
-        throw new Error("Connection timeout during initialization");
-      }
-      throw new Error(`Initialization failed: ${error.message}`);
-    }
-  }
-  async handle_auth_error(method_name, retry_callback) {
-    try {
-      console.log(`Token expired in ${method_name}, reinitializing...`);
-      this.user_cache = null;
-      return await retry_callback();
-    } catch (retry_error) {
-      console.error(`Retry failed in ${method_name}:`, retry_error.message);
-      throw retry_error;
-    }
-  }
-  generate_device() {
-    try {
-      const brands = {
-        Oppo: ["CPH2699", "CPH2739", "CPH2735"],
-        Xiaomi: ["2407FPN8EG", "24116RNC1I", "25057RN09E"],
-        Samsung: ["SM-A566V", "SM-A176B", "SM-E366B"],
-        Realme: ["RMX3562", "RMX3286", "RMX3286"]
-      };
-      const versions = ["12", "13", "14"];
-      const brand_keys = Object.keys(brands);
-      const brand = brand_keys[Math.floor(Math.random() * brand_keys.length)];
-      const model = brands[brand][Math.floor(Math.random() * brands[brand].length)];
-      const version = versions[Math.floor(Math.random() * versions.length)];
-      return {
-        aid: Array.from({
-          length: 16
-        }, () => Math.random().toString(36).charAt(2)).join(""),
-        gaid: crypto.randomUUID(),
-        systemversion: `${brand}|${model}|${version}`
-      };
-    } catch (error) {
-      console.error("Failed to generate device:", error.message);
-      throw new Error("Device generation failed");
-    }
-  }
-  async get_user_info_internal(token, headers) {
-    try {
-      const head = {
-        ...headers,
-        token: token,
-        ts: Math.floor(Date.now() / 1e3).toString()
-      };
-      const {
-        data
-      } = await axios.post(`${this.api.base}${this.api.endpoints.get_user_info}`, {}, {
-        headers: head,
-        timeout: 1e4,
-        validateStatus: status => status < 500
+      console.error(`${label} Request failed:`, {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        message: error.message,
+        data: error.response?.data
       });
-      if (!data?.data) {
-        throw new Error("Invalid user info response");
-      }
-      return data.data;
-    } catch (error) {
-      console.error("Failed to get user info internally:", error.message);
-      if (error.response?.status === 401) {
-        throw new Error("Unauthorized access to user info");
-      }
       throw error;
     }
   }
-  async get_user_info() {
-    try {
-      await this.ensure_initialized();
-      console.log("Fetching user info...");
-      const user_info = await this.get_user_info_internal(this.user_cache.token, this.user_cache.headers);
-      this.user_cache.info = user_info;
-      console.log("User info retrieved successfully");
-      return {
-        success: true,
-        code: 200,
-        result: user_info
-      };
-    } catch (error) {
-      console.error("Error getting user info:", error.message);
-      if (error.response?.status === 401) {
-        return await this.handle_auth_error("get_user_info", () => this.get_user_info());
-      }
-      return {
-        success: false,
-        code: error.response?.status || 500,
-        result: {
-          error: "Failed to get user information",
-          details: error.message
-        }
-      };
-    }
-  }
-  async list({
-    category,
-    block_id,
-    vid,
-    page = 1,
-    page_size = 10,
+  async init({
     ...rest
   } = {}) {
+    const label = "[INIT]";
     try {
-      await this.ensure_initialized();
-      console.log(`Fetching video list - Category: ${category || "N/A"}, Page: ${page}`);
-      const resolved_block_id = block_id || this.block_map[category];
-      if (!resolved_block_id) {
-        const valid_categories = Object.keys(this.block_map).join(", ");
-        return {
-          success: false,
-          code: 400,
-          result: {
-            error: `Invalid category. Available: ${valid_categories}`
-          }
-        };
-      }
-      const headers = {
-        ...this.user_cache.headers,
-        token: this.user_cache.token,
-        ts: Math.floor(Date.now() / 1e3).toString()
-      };
+      console.log(`${label} Initializing session...`);
+      const h = this._headers();
+      delete h.token;
       const payload = {
-        blockId: resolved_block_id.toString(),
-        page: page.toString(),
-        pageSize: page_size.toString(),
-        vid: vid?.toString() || "",
+        aid: this.session.device.aid,
         ...rest
       };
-      console.log("Making video list request...");
-      const {
-        data
-      } = await axios.post(`${this.api.base}${this.api.endpoints.list}`, payload, {
-        headers: headers,
-        timeout: 15e3,
-        validateStatus: status => status < 500
+      console.log(`${label} Payload:`, payload);
+      const res = await this.client.post(this.cfg.endpoints.init, payload, {
+        headers: h
       });
-      if (!data?.data) {
-        throw new Error("Invalid list response");
+      const data = res?.data;
+      console.log(`${label} Response:`, {
+        code: data?.code,
+        msg: data?.msg,
+        hasToken: !!data?.data?.token
+      });
+      const token = data?.data?.token;
+      if (token) {
+        this.session.token = token;
+        console.log(`${label} ✓ Session initialized, token: ${token.substring(0, 12)}...`);
+        return {
+          success: true,
+          token: token.substring(0, 12) + "..."
+        };
       }
-      const videos = data.data.list || [];
-      console.log(`Retrieved ${videos.length} videos`);
-      return {
-        success: true,
-        code: 200,
-        result: {
-          mode: vid ? "season" : "category",
-          category: category || null,
-          block_id: resolved_block_id,
-          vid: vid || null,
-          page: page,
-          page_size: page_size,
-          total: videos.length,
-          videos: videos.map(v => ({
-            title: v.name,
-            vid: v.vid,
-            thumb: v.thumb,
-            is_free: v.is_free,
-            episode_count: v.publishCount
-          }))
-        }
-      };
-    } catch (error) {
-      console.error("Error fetching video list:", error.message);
-      if (error.response?.status === 401) {
-        return await this.handle_auth_error("list", () => this.list({
-          category: category,
-          block_id: block_id,
-          vid: vid,
-          page: page,
-          page_size: page_size,
-          ...rest
-        }));
-      }
+      console.error(`${label} ✗ No token received in response`);
       return {
         success: false,
-        code: error.response?.status || 500,
-        result: {
-          error: "Failed to fetch video list",
-          details: error.message
-        }
+        error: "No token received"
       };
+    } catch (error) {
+      console.error(`${label} ✗ Initialization failed:`, {
+        status: error.response?.status,
+        message: error.message,
+        data: error.response?.data
+      });
+      throw error;
     }
   }
-  async info({
-    vid = "",
+  async getConfig() {
+    console.log("[CONFIG] Fetching base config...");
+    return await this._req("baseConfig");
+  }
+  async getUser() {
+    console.log("[USER] Fetching user info...");
+    return await this._req("userInfo");
+  }
+  async getReward() {
+    console.log("[REWARD] Fetching user rewards...");
+    return await this._req("userReward");
+  }
+  async getList({
+    page = 1,
+    blockId = 1,
     ...rest
-  }) {
-    try {
-      if (!vid || typeof vid !== "string") {
-        return {
-          success: false,
-          code: 400,
-          result: {
-            error: "Video ID is required and must be a string"
-          }
-        };
-      }
-      await this.ensure_initialized();
-      console.log(`Fetching drama details for VID: ${vid}`);
-      const headers = {
-        ...this.user_cache.headers,
-        token: this.user_cache.token,
-        ts: Math.floor(Date.now() / 1e3).toString()
-      };
-      const payload = {
-        vid: vid,
-        ...rest
-      };
-      console.log("Making drama details request...");
-      const {
-        data
-      } = await axios.post(`${this.api.base}${this.api.endpoints.drama}`, payload, {
-        headers: headers,
-        timeout: 15e3,
-        validateStatus: status => status < 500
-      });
-      if (!data?.data) {
-        throw new Error("Invalid drama response");
-      }
-      const episodes = data.data.list || [];
-      console.log(`Retrieved ${episodes.length} episodes`);
-      return {
-        success: true,
-        code: 200,
-        result: {
-          vid: vid,
-          total_episodes: episodes.length,
-          episodes: episodes.map(ep => ({
-            id: ep.id,
-            drama_num: ep.dramaNum,
-            play_url: ep.playUrl,
-            thumb: ep.thumb,
-            price: ep.price,
-            unlock: ep.unlock,
-            subtitles_url: ep.subtitlesUrl || null
-          }))
-        }
-      };
-    } catch (error) {
-      console.error("Error fetching drama details:", error.message);
-      if (error.response?.status === 401) {
-        return await this.handle_auth_error("drama", () => this.drama(vid, ...rest));
-      }
-      return {
-        success: false,
-        code: error.response?.status || 500,
-        result: {
-          error: "Failed to fetch drama details",
-          details: error.message
-        }
-      };
-    }
+  } = {}) {
+    console.log("[LIST] Fetching video list:", {
+      page: page,
+      blockId: blockId
+    });
+    return await this._req("videoList", {
+      page: page.toString(),
+      blockId: blockId.toString(),
+      ...rest
+    });
   }
-  get_categories() {
-    try {
-      return Object.keys(this.block_map);
-    } catch (error) {
-      console.error("Failed to get categories:", error.message);
-      return [];
-    }
+  async getDetail({
+    vid,
+    ...rest
+  } = {}) {
+    console.log("[DETAIL] Fetching video detail:", {
+      vid: vid
+    });
+    return await this._req("videoDrama", {
+      vid: vid?.toString(),
+      ...rest
+    });
   }
-  clear_cache() {
-    try {
-      this.user_cache = null;
-      this.device_cache = null;
-      console.log("Cache cleared successfully");
-    } catch (error) {
-      console.error("Failed to clear cache:", error.message);
-    }
+  async search({
+    keyword,
+    ...rest
+  } = {}) {
+    console.log("[SEARCH] Searching videos:", {
+      keyword: keyword
+    });
+    return await this._req("videoSearch", {
+      keyword: keyword,
+      ...rest
+    });
   }
-  enable_cache() {
-    try {
-      this.cache_enabled = true;
-      console.log("Cache enabled");
-    } catch (error) {
-      console.error("Failed to enable cache:", error.message);
-    }
+  async getRecommend({
+    type = "list",
+    ...rest
+  } = {}) {
+    console.log("[RECOMMEND] Fetching recommendations:", {
+      type: type
+    });
+    const ep = type === "end" ? "recEnd" : type === "new" ? "recNew" : "recList";
+    return await this._req(ep, rest);
   }
-  disable_cache() {
-    try {
-      this.cache_enabled = false;
-      this.clear_cache();
-      console.log("Cache disabled");
-    } catch (error) {
-      console.error("Failed to disable cache:", error.message);
-    }
+  async getHistory({
+    ...rest
+  } = {}) {
+    console.log("[HISTORY] Fetching watch history...");
+    return await this._req("historyGet", rest);
   }
-  get_cache_status() {
-    return {
-      cache_enabled: this.cache_enabled,
-      has_user_cache: !!this.user_cache,
-      has_device_cache: !!this.device_cache
-    };
+  async delHistory({
+    ...rest
+  } = {}) {
+    console.log("[HISTORY] Deleting history item...");
+    return await this._req("historyDel", rest);
+  }
+  async getRack({
+    ...rest
+  } = {}) {
+    console.log("[RACK] Fetching my list...");
+    return await this._req("rackGet", rest);
+  }
+  async saveRack({
+    vid,
+    ...rest
+  } = {}) {
+    console.log("[RACK] Saving to my list:", {
+      vid: vid
+    });
+    return await this._req("rackSave", {
+      vid: vid,
+      ...rest
+    });
+  }
+  async delRack({
+    ...rest
+  } = {}) {
+    console.log("[RACK] Removing from my list...");
+    return await this._req("rackDel", rest);
   }
 }
 export default async function handler(req, res) {
-  const {
-    action,
-    ...params
-  } = req.method === "GET" ? req.query : req.body;
-  const jowo = new JowoDramaAPI();
   try {
+    const {
+      action,
+      ...params
+    } = req.method === "GET" ? req.query : req.body;
+    if (!action) {
+      return res.status(400).json({
+        error: "Missing required field: action",
+        required: {
+          action: ["init", "config", "user", "reward", "list", "detail", "search", "recommend", "history", "del_history", "rack", "save_rack", "del_rack"]
+        }
+      });
+    }
+    const api = new JowoDramaAPI();
     let result;
     switch (action) {
-      case "list":
-        if (!params.category) {
-          return res.status(400).json({
-            error: "category parameter is required for list"
-          });
-        }
-        result = await jowo.list(params);
+      case "init":
+        result = await api.init(params);
         break;
-      case "info":
+      case "config":
+        result = await api.getConfig();
+        break;
+      case "user":
+        result = await api.getUser();
+        break;
+      case "reward":
+        result = await api.getReward();
+        break;
+      case "list":
+        result = await api.getList(params);
+        break;
+      case "detail":
         if (!params.vid) {
           return res.status(400).json({
-            error: "vid parameter is required for info"
+            error: `Missing required field: vid (required for ${action})`
           });
         }
-        result = await jowo.info(params);
+        result = await api.getDetail(params);
+        break;
+      case "search":
+        if (!params.keyword) {
+          return res.status(400).json({
+            error: `Missing required field: keyword (required for ${action})`
+          });
+        }
+        result = await api.search(params);
+        break;
+      case "recommend":
+        result = await api.getRecommend(params);
+        break;
+      case "history":
+        result = await api.getHistory(params);
+        break;
+      case "del_history":
+        result = await api.delHistory(params);
+        break;
+      case "rack":
+        result = await api.getRack(params);
+        break;
+      case "save_rack":
+        if (!params.vid) {
+          return res.status(400).json({
+            error: `Missing required field: vid (required for ${action})`
+          });
+        }
+        result = await api.saveRack(params);
+        break;
+      case "del_rack":
+        result = await api.delRack(params);
         break;
       default:
         return res.status(400).json({
-          error: `Invalid action: ${action}. Allowed: list | info`
+          error: `Invalid action: ${action}`,
+          allowed: ["init", "config", "user", "reward", "list", "detail", "search", "recommend", "history", "del_history", "rack", "save_rack", "del_rack"]
         });
     }
     return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({
-      error: "An error occurred",
-      details: error.message
+      success: false,
+      error: error.message || "Internal server error",
+      code: 500
     });
   }
 }

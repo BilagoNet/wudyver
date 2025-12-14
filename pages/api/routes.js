@@ -1206,6 +1206,7 @@ export default function handler(req, res) {
     { path: "/api/film/lk21", name: "Lk21", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/film/zonafilm", name: "Zonafilm", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/film/jowo-tv", name: "Jowo-tv", params: [{ "name": "prompt", "in": "query", "required": false }], },
+    { path: "/api/film/melolo", name: "Melolo", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/film/drakor/v1", name: "V1", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/film/drakor/v5", name: "V5", params: [{ "name": "prompt", "in": "query", "required": false }], },
     { path: "/api/film/drakor/v7", name: "V7", params: [{ "name": "prompt", "in": "query", "required": false }], },

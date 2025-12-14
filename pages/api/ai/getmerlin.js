@@ -1,86 +1,268 @@
 import axios from "axios";
-class ChatService {
+import {
+  CookieJar
+} from "tough-cookie";
+import {
+  wrapper
+} from "axios-cookiejar-support";
+import {
+  randomUUID
+} from "crypto";
+class MerlinAI {
   constructor() {
-    this.client = axios.create({
-      baseURL: "https://arcane.getmerlin.in/v1/thread/unified",
-      headers: {
-        accept: "text/event-stream, text/event-stream",
-        "accept-language": "id-ID,id;q=0.9",
-        authorization: "Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6ImMwYTQwNGExYTc4ZmUzNGM5YTVhZGU5NTBhMjE2YzkwYjVkNjMwYjMiLCJ0eXAiOiJKV1QifQ.eyJwcm92aWRlcl9pZCI6ImFub255bW91cyIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9mb3llci13b3JrIiwiYXVkIjoiZm95ZXItd29yayIsImF1dGhfdGltZSI6MTczNTcwNTA1MSwidXNlcl9pZCI6IlkxSXJxaWw3Y1dQcUlwM3RLZTY4SlY4ZDJHejIiLCJzdWIiOiJZMUlycWlsN2NXUHFJcDN0S2U2OEpWOGQyR3oyIiwiaWF0IjoxNzM1NzA1MDUxLCJleHAiOjE3MzU3MDg2NTEsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnt9LCJzaWduX2luX3Byb3ZpZGVyIjoiYW5vbnltb3VzIn19.AZthtQIBXglSSf_5bh9uCx3YSEr3xVsAzeiHwkBnRqYwm4Ig0rIscrOWgUVhKVyMPfAotCa-0LLMOwUHs3Pj2GkrCnAABBE0oTGm2S50gFQYTWW7BQYb7Wu_nPukBjuoyc7BdSx79QiOAeCLoj8rII84GNyRrLP8b_-r1oFb4j4ftS8U_-tcpGhdon4MqYgN3MJ59Lrf6A0Ss8qs389aRtnTzaw6vkY0dUXSW1aDlwF15JNtgXnP0zh60HbOIn404aBHR7gdUOzCBvEFn51Opi_PXL1m4L--lbnOcDClwbsMqUVLoAndgo9IzOJ2w6XuVBYNKH6HJx-jsttqZgQ9IA",
-        "content-type": "application/json",
-        origin: "https://www.getmerlin.in",
-        priority: "u=1, i",
-        referer: "https://www.getmerlin.in/",
-        "sec-ch-ua": '"Chromium";v="131", "Not_A Brand";v="24", "Microsoft Edge Simulate";v="131", "Lemur";v="131"',
-        "sec-ch-ua-mobile": "?1",
-        "sec-ch-ua-platform": '"Android"',
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-site",
-        "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
-        "x-merlin-version": "web-merlin"
-      }
-    });
+    this.jar = new CookieJar();
+    this.api = wrapper(axios.create({
+      jar: this.jar,
+      timeout: 6e4
+    }));
+    this.token = null;
+    this.ua = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36";
+    this.apiKey = "AIzaSyAvCgtQ4XbmlQGIynDT-v_M8eLaXrKmtiM";
+    this.base = "https://www.getmerlin.in";
   }
-  parseResponse(response) {
+  async init() {
     try {
-      const filteredData = response.split("\n").filter(line => line.startsWith("data:")).map(line => {
-        const match = line.slice(5);
-        return match ? JSON.parse(match[1])?.data.content : "";
+      console.log("🔐 Inisialisasi auth...");
+      await this.signUp();
+      await this.lookup();
+      console.log("✅ Auth berhasil");
+    } catch (e) {
+      console.error("❌ Init gagal:", e?.message || e);
+      throw e;
+    }
+  }
+  async signUp() {
+    try {
+      const {
+        data
+      } = await this.api.post(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${this.apiKey}`, {
+        returnSecureToken: true
+      }, {
+        headers: {
+          "user-agent": this.ua
+        }
       });
-      return filteredData.join("");
-    } catch (error) {
-      console.error("Error parsing response:", error);
-      return "";
+      this.token = data?.idToken;
+      console.log("📝 SignUp OK");
+    } catch (e) {
+      console.error("SignUp error:", e?.response?.data || e?.message);
+      throw e;
     }
   }
-  async sendChatRequest(data) {
+  async lookup() {
     try {
-      const response = await this.client.post("", data);
-      return this.parseResponse(response.data);
-    } catch (error) {
-      console.error("Error sending chat request:", error);
-      throw new Error("Failed to send chat request");
+      await this.api.post(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${this.apiKey}`, {
+        idToken: this.token
+      }, {
+        headers: {
+          "user-agent": this.ua
+        }
+      });
+      console.log("🔍 Lookup OK");
+    } catch (e) {
+      console.log("⚠️  Lookup skip");
     }
+  }
+  async upload(file) {
+    try {
+      const id = randomUUID();
+      const isUrl = typeof file === "string" && file.startsWith("http");
+      const isBase64 = typeof file === "string" && file.startsWith("data:");
+      const isBuffer = Buffer.isBuffer(file);
+      let buffer, mime = "image/jpeg",
+        name = `${id}.jpg`;
+      if (isUrl) {
+        console.log("📥 Download dari URL...");
+        const {
+          data,
+          headers
+        } = await this.api.get(file, {
+          responseType: "arraybuffer"
+        });
+        buffer = Buffer.from(data);
+        mime = headers?.["content-type"] || mime;
+        const ext = mime.split("/")[1] || "jpg";
+        name = `${id}.${ext}`;
+      } else if (isBase64) {
+        const [header, b64] = file.split(",");
+        mime = header?.match(/:(.*?);/)?.[1] || mime;
+        buffer = Buffer.from(b64, "base64");
+        const ext = mime.split("/")[1] || "jpg";
+        name = `${id}.${ext}`;
+      } else if (isBuffer) {
+        buffer = file;
+      } else {
+        throw new Error("Invalid file type");
+      }
+      console.log("🔑 Presigned URL...");
+      const {
+        data: pre
+      } = await this.api.post(`${this.base}/arcane/api/v1/user/getPresignedUrl`, {
+        files: [{
+          id: id,
+          name: name,
+          type: mime
+        }]
+      }, {
+        headers: {
+          authorization: `Bearer ${this.token}`,
+          "user-agent": this.ua
+        }
+      });
+      const signedData = pre?.data?.signedUrls?.[id];
+      const uploadUrl = signedData?.url;
+      const gcsId = signedData?.fileName;
+      if (!uploadUrl) throw new Error("No upload URL");
+      console.log("⬆️  Upload file...");
+      await this.api.put(uploadUrl, buffer, {
+        headers: {
+          "content-type": mime
+        }
+      });
+      console.log("📤 Finalisasi upload...");
+      const payload = {
+        attachment: {
+          fileName: name,
+          gcsId: gcsId,
+          id: id,
+          mimeType: mime,
+          url: uploadUrl,
+          type: "IMAGE"
+        },
+        language: "ENGLISH",
+        chatId: randomUUID(),
+        backgroundTask: true
+      };
+      const {
+        data: fin
+      } = await this.api.post(`${this.base}/arcane/api/v2/user/upload`, payload, {
+        headers: {
+          authorization: `Bearer ${this.token}`,
+          "user-agent": this.ua
+        }
+      });
+      console.log("✅ Upload berhasil");
+      return fin?.data?.attachment;
+    } catch (e) {
+      console.error("❌ Upload gagal:", e?.message || e);
+      console.error("📛 Error detail:", e?.response?.data || e);
+      throw e;
+    }
+  }
+  async chat({
+    prompt,
+    imageUrl,
+    ...rest
+  }) {
+    try {
+      if (!this.token) await this.init();
+      const chatId = randomUUID();
+      const msgId = randomUUID();
+      const childId = randomUUID();
+      let attachments = [];
+      if (imageUrl) {
+        console.log("🖼️  Proses gambar...");
+        const urls = Array.isArray(imageUrl) ? imageUrl : [imageUrl];
+        for (const url of urls) {
+          const att = await this.upload(url);
+          if (att) attachments.push(att);
+        }
+      }
+      console.log("💬 Kirim chat...");
+      const {
+        data: stream
+      } = await this.api.post(`${this.base}/arcane/api/v2/thread/unified`, {
+        attachments: attachments,
+        chatId: chatId,
+        language: "AUTO",
+        message: {
+          childId: childId,
+          content: prompt,
+          context: "",
+          id: msgId,
+          parentId: "root"
+        },
+        mode: "UNIFIED_CHAT",
+        model: rest?.model || "gemini-2.5-flash",
+        metadata: {
+          noTask: true,
+          isWebpageChat: false,
+          deepResearch: false,
+          webAccess: true,
+          proFinderMode: false,
+          mcpConfig: {
+            isEnabled: false
+          },
+          merlinMagic: false,
+          ...rest?.metadata
+        }
+      }, {
+        headers: {
+          authorization: `Bearer ${this.token}`,
+          "user-agent": this.ua,
+          accept: "text/event-stream"
+        },
+        responseType: "stream"
+      });
+      return this.parse(stream);
+    } catch (e) {
+      console.error("❌ Chat gagal:", e?.message || e);
+      console.error("📛 Error detail:", e?.response?.data || e);
+      throw e;
+    }
+  }
+  async parse(stream) {
+    return new Promise((res, rej) => {
+      let result = "";
+      let buf = "";
+      const events = {};
+      stream.on("data", chunk => {
+        buf += chunk.toString();
+        const lines = buf.split("\n\n");
+        buf = lines.pop() || "";
+        for (const line of lines) {
+          const [evt, data] = line.split("\n");
+          if (evt?.startsWith("event:") && data?.startsWith("data:")) {
+            const type = evt.slice(7).trim();
+            const json = data.slice(6).trim();
+            try {
+              const obj = JSON.parse(json);
+              if (type === "message" && obj?.data?.text) {
+                result += obj.data.text;
+                console.log(obj.data.text);
+              }
+              if (!events[type]) events[type] = [];
+              events[type].push(obj);
+            } catch {}
+          }
+        }
+      });
+      stream.on("end", () => {
+        console.log("\n✅ Selesai");
+        res({
+          result: result,
+          ...events
+        });
+      });
+      stream.on("error", rej);
+    });
   }
 }
 export default async function handler(req, res) {
-  const {
-    prompt,
-    model = "gemini-1.5-flash"
-  } = req.method === "GET" ? req.query : req.body;
-  if (!prompt) {
+  const params = req.method === "GET" ? req.query : req.body;
+  if (!params.prompt) {
     return res.status(400).json({
-      message: "No prompt provided"
+      error: "Parameter 'prompt' diperlukan"
     });
   }
-  const chatService = new ChatService();
-  const requestData = {
-    attachments: [],
-    chatId: "307840fa-ef38-45d8-a6d7-de125ea97c11",
-    language: "AUTO",
-    message: {
-      childId: "67ab245d-8b2a-409d-8b9e-12b799d02bbf",
-      content: prompt,
-      context: "",
-      id: "a66b2d23-11c1-4da3-bc79-d69d6202f39f",
-      parentId: "root"
-    },
-    metadata: {
-      largeContext: false,
-      proFinderMode: false
-    },
-    mode: "UNIFIED_CHAT",
-    model: model
-  };
+  const api = new MerlinAI();
   try {
-    const result = await chatService.sendChatRequest(requestData);
-    return res.status(200).json({
-      result: typeof result === "object" ? result : result
-    });
+    const data = await api.chat(params);
+    return res.status(200).json(data);
   } catch (error) {
+    const errorMessage = error.message || "Terjadi kesalahan saat memproses.";
     return res.status(500).json({
-      message: error.message
+      error: errorMessage
     });
   }
 }
