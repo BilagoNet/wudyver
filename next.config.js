@@ -53,11 +53,8 @@ const nextConfig = withPWA({
   compress: true,
   poweredByHeader: false,
   experimental: {
-    appDir: true,
     nextScriptWorkers: true,
-    serverActions: {
-      bodySizeLimit: "5gb"
-    },
+    serverActions: true,
     amp: {
       skipValidation: true
     }
