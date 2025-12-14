@@ -1,5 +1,4 @@
 import axios from "axios";
-import * as cheerio from "cheerio";
 import {
   wrapper
 } from "axios-cookiejar-support";
@@ -9,7 +8,7 @@ import {
 import FormData from "form-data";
 import SpoofHead from "@/lib/spoof-head";
 import apiConfig from "@/configs/apiConfig";
-const TEMP_MAIL_API = `https://${apiConfig.DOMAIN_URL}/api/mails/v13`;
+const TEMP_MAIL_API = `https://${apiConfig.DOMAIN_URL}/api/mails/v22`;
 const BASE_URL = "https://nanobanana.org";
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 class NanoBanana {
@@ -45,10 +44,8 @@ class NanoBanana {
     }
     console.log(`-------------------------------------------`);
   }
-  extractOTP(html) {
-    if (!html) return null;
-    const $ = cheerio.load(html);
-    const fullText = $("body").text().trim();
+  extractOTP(fullText) {
+    if (!fullText) return null;
     const otpMatch = fullText.match(/(\b\d{6}\b)/);
     return otpMatch ? otpMatch[1] : null;
   }
@@ -61,7 +58,7 @@ class NanoBanana {
       if (!csrfToken) throw new Error("Gagal mendapatkan token CSRF.");
       console.log("🔑 Token CSRF diterima.");
       const mailResponse = await this.client.get(`${TEMP_MAIL_API}?action=create`);
-      const email = mailResponse.data?.data?.address;
+      const email = mailResponse.data?.email;
       if (!email) throw new Error("Gagal membuat email.");
       console.log(`✉️  Email dibuat: ${email}`);
       await this.client.post(`${BASE_URL}/api/auth/send-code`, {
@@ -71,8 +68,8 @@ class NanoBanana {
       let otp = null;
       console.log("⏳ Memeriksa OTP (polling)...");
       for (let i = 0; i < 60; i++) {
-        const otpResponse = await this.client.get(`${TEMP_MAIL_API}?action=message&email=${email}`);
-        otp = this.extractOTP(otpResponse.data?.data?.rows?.[0]?.html);
+        const otpResponse = await this.client.get(`${TEMP_MAIL_API}?action=inbox&id=${email.split("@")[0]}`);
+        otp = this.extractOTP(otpResponse.data?.messages?.[0]?.subject);
         if (otp) {
           console.log(`\n✅ OTP ditemukan: ${otp}`);
           break;

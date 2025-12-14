@@ -1,182 +1,202 @@
 import axios from "axios";
 import FormData from "form-data";
 import SpoofHead from "@/lib/spoof-head";
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-class AinanobananaAPI {
+class CakuAI {
   constructor() {
+    this.baseUrl = "https://caku.ai";
+    this.cookies = [];
+    this.ua = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36";
     this.api = axios.create({
-      baseURL: "https://ainanobanana.ai/api/",
+      baseURL: this.baseUrl,
       headers: {
         accept: "*/*",
         "accept-language": "id-ID",
-        origin: "https://ainanobanana.ai",
-        referer: "https://ainanobanana.ai/dashboard",
-        "sec-ch-ua": '"Chromium";v="127", "Not)A;Brand";v="99"',
+        "cache-control": "no-cache",
+        origin: this.baseUrl,
+        pragma: "no-cache",
+        priority: "u=1, i",
+        referer: `${this.baseUrl}/text-to-image`,
+        "sec-ch-ua": '"Chromium";v="127", "Not)A;Brand";v="99", "Microsoft Edge Simulate";v="127", "Lemur";v="127"',
         "sec-ch-ua-mobile": "?1",
         "sec-ch-ua-platform": '"Android"',
         "sec-fetch-dest": "empty",
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-origin",
-        "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36",
+        "user-agent": this.ua,
         ...SpoofHead()
       }
     });
-    console.log("API client initialized");
-  }
-  async _upload(imageUrl) {
-    console.log(`Uploading image from: ${imageUrl}`);
-    try {
-      const imageResponse = await axios.get(imageUrl, {
-        responseType: "arraybuffer"
-      });
-      const imageBuffer = Buffer.from(imageResponse.data, "binary");
-      const form = new FormData();
-      form.append("image", imageBuffer, "image.jpg");
-      const uploadResponse = await this.api.post("/upload/image", form, {
-        headers: form.getHeaders()
-      });
-      const uploadedUrl = uploadResponse.data?.url;
-      if (!uploadedUrl) {
-        throw new Error("Image URL not found in upload response.");
+    this.api.interceptors.request.use(config => {
+      if (this.cookies.length > 0) {
+        config.headers["cookie"] = this.cookies.join("; ");
       }
-      console.log(`Image uploaded successfully, URL: ${uploadedUrl}`);
-      return uploadedUrl;
-    } catch (error) {
-      console.error("Image upload failed:", error.message);
-      throw new Error(error.response?.data?.error || "Failed to upload image");
+      return config;
+    });
+    this.api.interceptors.response.use(response => {
+      const setCookie = response.headers["set-cookie"];
+      if (setCookie) {
+        const newCookies = setCookie.map(c => c.split(";")[0]);
+        this.cookies = [...new Set([...this.cookies, ...newCookies])];
+      }
+      return response;
+    }, error => Promise.reject(error));
+  }
+  async toBuf(source) {
+    try {
+      if (Buffer.isBuffer(source)) return source;
+      if (typeof source === "string") {
+        if (source.startsWith("http")) {
+          console.log("🔄 Fetching image url...");
+          const res = await axios.get(source, {
+            responseType: "arraybuffer"
+          });
+          return Buffer.from(res.data);
+        }
+        if (source.startsWith("data:image")) {
+          return Buffer.from(source.split(",")[1], "base64");
+        }
+        return Buffer.from(source, "base64");
+      }
+      return null;
+    } catch (e) {
+      console.error("❌ Gagal convert buffer:", e.message);
+      return null;
     }
   }
-  async _poll(taskId) {
-    console.log(`Polling for taskId: ${taskId}`);
+  async wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+  async poll(taskId) {
     let attempts = 0;
     const maxAttempts = 60;
+    console.log(`⏳ Polling task: ${taskId}`);
     while (attempts < maxAttempts) {
       try {
-        const response = await this.api.get(`image/status/${taskId}`);
-        const status = response.data?.status;
-        console.log(`Poll attempt ${attempts + 1}: Status is ${status}`);
+        await this.wait(3e3);
+        const {
+          data
+        } = await this.api.get(`/api/image/status/${taskId}`);
+        const status = data?.status;
         if (status === 1) {
-          console.log("Processing finished successfully.");
-          return response.data;
-        } else if (status === 2) {
-          console.error("Processing failed.");
-          throw new Error(response.data?.error || "Generation failed with status 2");
+          console.log("✅ Task selesai!");
+          return {
+            success: true,
+            taskId: taskId,
+            result: data?.outputImage,
+            meta: data
+          };
         }
         attempts++;
-        await sleep(3e3);
-      } catch (error) {
-        console.error("Error during polling:", error.message);
-        throw error;
+      } catch (e) {
+        attempts++;
       }
     }
-    throw new Error("Polling timed out.");
+    return {
+      success: false,
+      message: "Timeout polling"
+    };
   }
-  async img2img({
+  async reqI2I(form) {
+    try {
+      console.log("🚀 Sending Image-to-Image request...");
+      const headers = {
+        ...form.getHeaders(),
+        referer: `${this.baseUrl}/dashboard`
+      };
+      const {
+        data
+      } = await this.api.post("/api/image/generate", form, {
+        headers: headers
+      });
+      const taskId = data?.taskId;
+      if (!taskId) throw new Error(data?.message || "No Task ID returned");
+      return await this.poll(taskId);
+    } catch (e) {
+      console.error("❌ Error I2I:", e?.response?.data || e.message);
+      return {
+        success: false,
+        error: e.message
+      };
+    }
+  }
+  async reqT2I(payload) {
+    try {
+      console.log("🚀 Sending Text-to-Image request...");
+      const {
+        data
+      } = await this.api.post("/api/text-to-image/generate", payload);
+      const taskId = data?.taskId;
+      if (!taskId) throw new Error(data?.message || "No Task ID returned");
+      return await this.poll(taskId);
+    } catch (e) {
+      console.error("❌ Error T2I:", e?.response?.data || e.message);
+      return {
+        success: false,
+        error: e.message
+      };
+    }
+  }
+  async generate({
     prompt,
     imageUrl,
     ...rest
   }) {
-    console.log("Starting img2img process...");
     try {
-      const form = new FormData();
-      form.append("prompt", prompt);
-      form.append("addWatermark", rest.addWatermark ?? "true");
-      form.append("inputMode", "upload");
-      const imageUrls = Array.isArray(imageUrl) ? imageUrl : [imageUrl];
-      for (let i = 0; i < imageUrls.length; i++) {
-        const url = imageUrls[i];
-        console.log(`Fetching image from ${url}...`);
-        const imageResponse = await axios.get(url, {
-          responseType: "arraybuffer"
-        });
-        const imageBuffer = Buffer.from(imageResponse.data, "binary");
-        form.append("images", imageBuffer, {
-          filename: `image${i}.png`,
-          contentType: "image/png"
-        });
-      }
-      console.log("Sending generation request for img2img...");
-      const response = await this.api.post("image/generate", form, {
-        headers: form.getHeaders()
-      });
-      const taskId = response.data?.taskId;
-      console.log("Received taskId:", taskId);
-      if (!taskId) {
-        throw new Error("Failed to get taskId from response.");
-      }
-      return await this._poll(taskId);
-    } catch (error) {
-      console.error("Error in img2img:", error.message);
-      throw new Error(error.response?.data?.error ? error.response.data.error : "An unknown error occurred in img2img");
-    }
-  }
-  async txt2img({
-    prompt,
-    ...rest
-  }) {
-    console.log("Starting txt2img process...");
-    try {
-      const payload = {
-        prompt: prompt,
-        aspectRatio: rest.aspectRatio || "1:1"
-      };
-      console.log("Sending generation request with payload:", payload);
-      const response = await this.api.post("text-to-image/generate", payload, {
-        headers: {
-          "Content-Type": "application/json"
+      console.log("⚙️ Memulai proses generate...");
+      if (imageUrl) {
+        console.log("📂 Mode: Image-to-Image (Construction Form Data)");
+        const form = new FormData();
+        form.append("prompt", prompt || "anime style");
+        form.append("addWatermark", String(rest.addWatermark ?? false));
+        form.append("inputMode", "upload");
+        form.append("model", rest.model || "nano-banana");
+        const images = Array.isArray(imageUrl) ? imageUrl : [imageUrl];
+        let idx = 0;
+        for (const imgSource of images) {
+          const buffer = await this.toBuf(imgSource);
+          if (buffer) {
+            form.append("images", buffer, {
+              filename: `upload_${Date.now()}_${idx}.jpg`,
+              contentType: "image/jpeg"
+            });
+            console.log(`➕ Appended image index ${idx}`);
+            idx++;
+          }
         }
-      });
-      const taskId = response.data?.taskId;
-      console.log("Received taskId:", taskId);
-      if (!taskId) {
-        throw new Error("Failed to get taskId from response.");
+        if (idx === 0) throw new Error("Tidak ada gambar valid untuk diupload");
+        return await this.reqI2I(form);
+      } else {
+        console.log("📝 Mode: Text-to-Image");
+        const payload = {
+          prompt: prompt,
+          aspectRatio: rest.aspectRatio || "9:16"
+        };
+        return await this.reqT2I(payload);
       }
-      return await this._poll(taskId);
-    } catch (error) {
-      console.error("Error in txt2img:", error.message);
-      throw new Error(error.response?.data?.error ?? "An unknown error occurred in txt2img");
+    } catch (e) {
+      console.error("🔥 Fatal Error:", e.message);
+      return {
+        success: false,
+        error: e.message
+      };
     }
   }
 }
 export default async function handler(req, res) {
-  const {
-    action,
-    ...params
-  } = req.method === "GET" ? req.query : req.body;
-  if (!action) {
+  const params = req.method === "GET" ? req.query : req.body;
+  if (!params.prompt) {
     return res.status(400).json({
-      error: "Action is required."
+      error: "Parameter 'prompt' diperlukan"
     });
   }
-  const api = new AinanobananaAPI();
+  const api = new CakuAI();
   try {
-    let response;
-    switch (action) {
-      case "img2img":
-        if (!params.prompt || !params.imageUrl) {
-          return res.status(400).json({
-            error: "Prompt and imageUrl are required for img2img."
-          });
-        }
-        response = await api.img2img(params);
-        return res.status(200).json(response);
-      case "txt2img":
-        if (!params.prompt) {
-          return res.status(400).json({
-            error: "Prompt is required for txt2img."
-          });
-        }
-        response = await api.txt2img(params);
-        return res.status(200).json(response);
-      default:
-        return res.status(400).json({
-          error: `Invalid action: ${action}. Supported actions are 'img2img', and 'txt2img'.`
-        });
-    }
+    const data = await api.generate(params);
+    return res.status(200).json(data);
   } catch (error) {
-    console.error("API Error:", error);
+    const errorMessage = error.message || "Terjadi kesalahan saat memproses.";
     return res.status(500).json({
-      error: error.message || "Internal Server Error"
+      error: errorMessage
     });
   }
 }

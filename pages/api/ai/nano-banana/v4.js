@@ -162,9 +162,9 @@ export default async function handler(req, res) {
     let response;
     switch (action) {
       case "img2img":
-        if (!params.prompt || !params.imageUrl) {
+        if (!params.prompt || !params.init_image) {
           return res.status(400).json({
-            error: "Prompt and imageUrl are required for img2img."
+            error: "Prompt and init_image are required for img2img."
           });
         }
         response = await api.img2img(params);
